@@ -5,6 +5,7 @@ export interface IJob extends Document {
   title: string;
   companyName: string;
   postedBy: Types.ObjectId;
+  companyId: Types.ObjectId;
   description: string;
   location: string;
   mode: "onsite" | "remote" | "hybrid";
@@ -19,6 +20,7 @@ const JobSchema: Schema<IJob> = new Schema(
     title: { type: String, required: true },
     companyName: { type: String, required: true },
     postedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    companyId: { type: Schema.Types.ObjectId, ref: "CompanyProfile", required: true },
     description: { type: String, required: true },
     location: { type: String, required: true },
     mode: { type: String, enum: ["onsite", "remote", "hybrid"], required: true },
@@ -28,6 +30,7 @@ const JobSchema: Schema<IJob> = new Schema(
   },
   { timestamps: true }
 );
+
 
 const Job = mongoose.models.Job || mongoose.model<IJob>("Job", JobSchema);
 export default Job;

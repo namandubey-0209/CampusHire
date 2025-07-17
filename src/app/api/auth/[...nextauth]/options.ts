@@ -40,6 +40,7 @@ export const authOptions: NextAuthOptions = {
             id: user._id.toString(),
             _id: user._id.toString(),
             name: user.name,
+            role: user.role,
           };
         } catch (err: any) {
           console.error("Authorization error:", err);
@@ -53,6 +54,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token._id = user.id || (user as any)._id;
         token.name = user.name;
+        token.role = user.role;
       } else {
         if (!token._id && token.sub) {
           token._id = token.sub;
@@ -66,6 +68,7 @@ export const authOptions: NextAuthOptions = {
         session.user = {
           _id: token._id as string,
           name: token.name as string,
+          role: token.role as string,
         };
       }
       

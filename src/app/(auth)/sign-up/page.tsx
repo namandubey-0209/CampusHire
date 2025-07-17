@@ -1,157 +1,200 @@
-"use client"
+"use client";
 
-import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useDebounceCallback } from "usehooks-ts";
+import { useState, useEffect, useCallback } from "react";
 import axios, { AxiosError } from "axios";
 import { ApiResponse } from "@/types/ApiResponse";
 import { useForm } from "react-hook-form";
 import { signUpSchema } from "@/schemas/signUpSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import * as z from "zod";
-import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import Button from "@/app/components/ui/Button";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Eye,EyeOff } from "lucide-react";
 
-const page = () => {
-    const [username, setUsername] = useState('');
-    const [usernameMessage, setUsernameMessage] = useState('');
-    const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+import { debounce } from "lodash";
+import Navbar from "@/app/components/Navbar";
+
+const SignUpPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const {toast} = useToast();
-    const debounced = useDebounceCallback(setUsername, 500);
+    const [checkBox, setCheckBox] = useState(false);
+ const [showPassword, setShowPassword] = useState<boolean>(false);
+
+    const [username, setUsername] = useState("");
+    const [usernameAvailable, setUsernameAvailable] = useState<null | boolean>(null);
+    const [isCheckingUsername, setIsCheckingUsername] = useState(false);
     const router = useRouter();
 
-    useEffect(() => {
-        const checkUsernameUnique = async () => {
-            if(username){
-                setIsCheckingUsername(true);
-                setUsernameMessage("");
-                try {
-                    const response = await axios.get(`/api/check-username-unique?username=${username}`);
-                    setUsernameMessage(response.data.message);
-                } catch (error) {
-                    const axioserror = error as AxiosError<ApiResponse>;
-                    setUsernameMessage(axioserror.response?.data.message ?? "Error checking username");  
-                }  finally{
-                    setIsCheckingUsername(false);
-                }
-            }
-        };
-        checkUsernameUnique();
-    },[username]);
-
-    const form = useForm<z.infer<typeof signUpSchema>>({
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+        setValue,
+        clearErrors,
+    } = useForm<z.infer<typeof signUpSchema>>({
         resolver: zodResolver(signUpSchema),
-        defaultValues:{
-            username: "",
-            email: "",
-            password: "",
-        }
     });
 
+    // Debounced username check function
+    const checkUsername = useCallback(
+        debounce(async (username: string) => {
+            if (username.length < 3) {
+                setUsernameAvailable(null);
+                setIsCheckingUsername(false);
+                return;
+            }
+
+            setIsCheckingUsername(true);
+            try {
+                const response = await axios.get(`/api/check-username-unique?username=${username}`);
+                setUsernameAvailable(response.data.success);
+            } catch (error) {
+                console.error("Error checking username:", error);
+                setUsernameAvailable(null);
+            } finally {
+                setIsCheckingUsername(false);
+            }
+        }, 500), // 500ms debounce time
+        []
+    );
+
+    // Effect to trigger debounce when username changes
+    useEffect(() => {
+        if (username) checkUsername(username);
+    }, [username, checkUsername]);
+
     const onSubmit = async (data: z.infer<typeof signUpSchema>) => {
+        if (!checkBox || usernameAvailable === false){
+            console.log("checkBox has to be clicked");
+            return;
+        }; // Prevent submission if username is taken
+
         setIsSubmitting(true);
         try {
             const response = await axios.post("/api/sign-up", data);
-            toast({title: "success", description: response.data.message});
             router.replace('/sign-in');
         } catch (error) {
             const axiosError = error as AxiosError<ApiResponse>;
-            let errorMessage = axiosError.response?.data.message;
-            toast({title: "Sign up failed", description: errorMessage ?? "An error occurred", variant: "destructive"});
+            console.log(axiosError.response?.data.message ?? "An error occurred");
         } finally {
             setIsSubmitting(false);
         }
-    }
+    };
 
-    return(
-        <div className="flex justify-center items-center min-h-screen bg-gray-800">
-            <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
-                <div className="text-center">
-                    <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-6">
-                        Join My Blog App
-                    </h1>
-                    <p className="mb-4">Sign up to have your own blog account</p>
-                </div>
-                <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                    name="username"
-                    control={form.control}
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Username</FormLabel>
-                        <Input
-                            {...field}
-                            onChange={(e) => {
-                            field.onChange(e);
-                            debounced(e.target.value);
-                            }}
-                        />
-                        {isCheckingUsername && <Loader2 className="animate-spin"/>}
-                        {!isCheckingUsername && usernameMessage && (
-                            <p
-                            className={`text-sm ${
-                                usernameMessage === "Username is unique" ? "text-green-500" : "text-red-500"
-                            }`}
-                            aria-live="polite"
-                            >
-                                {usernameMessage}
-                            </p>
+    return (<>
+        <Navbar/>
+        <section className="flex justify-between">
+            {/* Left Side */}
+            <div className="hidden lg:flex bg-gradient-to-tr from-[#5d57ee]/90 to-purple-400 backdrop-blur-4xl brightness-120 h-screen w-[500px]"></div>
+
+            {/* Right Side - Form Section */}
+            <div className="flex flex-col justify-center items-center w-full gap-10 h-screen">
+                <h1 className="font-['Inter'] text-[24px] font-bold max-md:text-[20px]">
+                    Sign up to Stream <span className="text-[#5D57EE]">Calendar</span>
+                </h1>
+
+                <form className="max-md:flex-col max-md:ml-5 mr-5" onSubmit={handleSubmit(onSubmit)}>
+                    {/* Name & Username */}
+                    <div className="flex justify-between gap-12 max-md:flex-col max-md:gap-4">
+                        <div>
+                            <h6 className="font-['Inter'] text-[16px] font-semibold">Name</h6>
+                            <input
+                                type="text"
+                                className="border border-[#5D57EE80] rounded-xl w-[200px] h-12 p-4 max-md:w-[360px]"
+                                {...register("name")}
+                            />
+                            {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
+                        </div>
+
+                        <div>
+                            <h6 className="font-['Inter'] text-[16px] font-semibold">Username</h6>
+                            <input
+                                type="text"
+                                className="border border-[#5D57EE80] rounded-xl w-[200px] h-12 p-4 max-md:w-[360px]"
+                                {...register("username")}
+                                value={username}
+                                onChange={(e) => {
+                                    setUsername(e.target.value);
+                                    setValue("username", e.target.value); // Ensure it updates form state
+                                    if (errors.username) clearErrors("username");
+                                }}
+                            />
+                            {errors.username && (
+                                <p className="text-red-500 text-sm">{errors.username.message}</p>
                             )}
-                        <FormMessage />
-                        </FormItem>
-                    )}
+                            {/* Username availability feedback */}
+                            {isCheckingUsername && (
+                                <p className="text-blue-500 text-sm">Checking...</p>
+                            )}
+                            {usernameAvailable === false && (
+                                <p className="text-red-500 text-sm">Username is already taken</p>
+                            )}
+                            {usernameAvailable === true && (
+                                <p className="text-green-500 text-sm">Username is available</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Email */}
+                    <div className="mt-3 mb-3">
+                        <h6 className="font-['Inter'] text-[16px] font-semibold">Email</h6>
+                        <input
+                            type="email"
+                            className="border border-[#5D57EE80] rounded-xl w-[540px] h-12 p-4 max-md:w-[360px]"
+                            {...register("email")}
+                        />
+                        {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
+                    </div>
+
+                    {/* Password */}
+                    <div>
+  <h6 className="font-['Inter'] text-[16px] font-semibold">Password</h6>
+  <div className="relative">
+    <input
+      type={showPassword ? "text" : "password"}
+      className="border border-[#5D57EE80] rounded-xl w-[540px] h-12 p-4 pr-12 max-md:w-[360px]"
+      {...register("password")}
+    />
+    <button
+      type="button"
+      onClick={() => setShowPassword(!showPassword)}
+      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+    >
+      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+    </button>
+  </div>
+  {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
+</div>
+
+                    {/* Terms & Conditions Checkbox */}
+                    <div className="flex gap-2 mt-3">
+                        <input
+                            type="checkbox"
+                            className="border border-[#5D57EE80] rounded-xl size-6"
+                            onChange={() => setCheckBox(!checkBox)}
+                        />
+                        <label className="text-[12px]">
+                            I agree with StreamCalendar’s Terms of Service, Privacy Policy, and <br className="hidden md:block" />
+                            default Notification Settings.
+                        </label>
+                    </div>
+
+                    {/* Sign Up Button */}
+                    <Button
+                        type="submit"
+                        title="Sign up"
+                        variant="btn_big1"
+                        onClick={() => {}}
+                        disabled={!checkBox || isSubmitting || usernameAvailable === false || isCheckingUsername} // Prevent submission if username is taken or still checking
                     />
-                    <FormField 
-                        name="email"
-                        control={form.control}
-                        render={({field}) =>(
-                            <FormItem>
-                                <FormLabel>Email</FormLabel>
-                                <Input {...field} name="email" />
-                                <FormMessage/>
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        name="password"
-                        control={form.control}
-                        render={({field})=> (
-                            <FormItem>
-                                <FormLabel>Password</FormLabel>
-                                <Input {...field} type="password"/>
-                                <FormMessage/>
-                            </FormItem>
-                        )}
-                    />
-                    <Button type="submit" className='w-full' disabled={isSubmitting}>
-                        {isSubmitting ? (
-                            <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Please wait
-                            </>
-                        ) : (
-                            'Sign Up'
-                        )}
-                    </Button>
                 </form>
-                </Form>
-                <div className="text-center mt-4">
-                <p>
-                    Already a member?{" "}
-                    <Link href="/sign-in" className="text-blue-600 hover:text-blue-800">
-                        Sign in
-                    </Link>
-                </p>
-                </div>
+
+                <h6 className="text-sm">
+                    Already have an account? <Link href="/sign-in">Sign In</Link>
+                </h6>
             </div>
-        </div>
+        </section></>
     );
 };
 
-export default page;
+export default SignUpPage;
