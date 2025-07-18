@@ -1,48 +1,41 @@
-"use client";
-import Button from "@/app/components/ui/Button";
-import googleIcon1 from "../../../asset/googleIcon1.svg";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+'use client';
 
-export default function oSignUp() {
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+
+export default function OSignUpPage() {
   const router = useRouter();
-  const onSubmit = async () => {
-    router.push("/sign-up");
+
+  const handleChoice = (role: 'admin' | 'student') => {
+    router.push(`/sign-up?role=${role}`);
   };
 
   return (
-    <div>
-      <section className="flex justify-between ">
-        <div className=" hidden lg:flex bg-gradient-to-tr from-[#5d57ee]/90 to-purple-400 backdrop-blur-4xl brightness-120 h-screen w-[500px]"></div>
-        <div className="flex flex-col justify-center items-center w-full gap-12 h-screen">
-          <h1 className="font-['inter'] text-[24px] font-bold max-md:text-[20px]">
-            Sign up to Stream
-            <span className="text-[#5D57EE]">Calendar </span>
-          </h1>
-          <Button
-            type="button"
-            title="Sign up with Google"
-            variant="btn_big1"
-            icon={googleIcon1}
-            onClick={onSubmit}
-          />
-          <h2>---------- or ----------</h2>
-          <Button
-            type="button"
-            title="Continue with email"
-            variant="btn_big2"
-            onClick={onSubmit}
-          />
-          <p className="text-center max-md:text-[12px]">
-            By creating an account you agree with our Terms of Service, Privacy
-            Policy,
-            <br /> and our default Notification Settings.
-          </p>
-          <h6 className="text-sm">
-            Already have an account? <Link href="/sign-in">Sign In</Link>
-          </h6>
+    <main className="min-h-screen flex items-center justify-center bg-background text-foreground px-4">
+      <div className="w-full max-w-md flex flex-col items-center gap-8 text-center">
+        <h1 className="text-3xl font-bold">👋 Welcome to <span className="text-purple-600">CampusHire</span></h1>
+        <p className="text-lg">Join as a Student or an Admin to get started</p>
+
+        <div className="flex flex-col gap-4 w-full">
+          <button
+            onClick={() => handleChoice('student')}
+            className="w-full px-6 py-3 rounded-lg bg-purple-600 text-white text-lg font-semibold hover:bg-purple-700 transition-all"
+          >
+            Continue as Student
+          </button>
+
+          <button
+            onClick={() => handleChoice('admin')}
+            className="w-full px-6 py-3 rounded-lg border border-purple-600 text-purple-600 text-lg font-semibold hover:bg-purple-50 dark:hover:bg-purple-900 transition-all"
+          >
+            Continue as Admin
+          </button>
         </div>
-      </section>
-    </div>
+
+        <p className="text-sm text-muted-foreground">
+          Already have an account? <Link href="/sign-in" className="underline hover:text-purple-600">Sign In</Link>
+        </p>
+      </div>
+    </main>
   );
 }

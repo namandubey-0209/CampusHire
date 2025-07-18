@@ -1,200 +1,114 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
-import axios, { AxiosError } from "axios";
-import { ApiResponse } from "@/types/ApiResponse";
-import { useForm } from "react-hook-form";
-import { signUpSchema } from "@/schemas/signUpSchema";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import Button from "@/app/components/ui/Button";
-import Link from "next/link";
-import { Eye,EyeOff } from "lucide-react";
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import axios from 'axios';
 
-import { debounce } from "lodash";
-import Navbar from "@/app/components/Navbar";
+export default function SignUpPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const role = searchParams.get('role') as 'student' | 'admin' | null;
 
-const SignUpPage = () => {
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [checkBox, setCheckBox] = useState(false);
- const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+  });
 
-    const [username, setUsername] = useState("");
-    const [usernameAvailable, setUsernameAvailable] = useState<null | boolean>(null);
-    const [isCheckingUsername, setIsCheckingUsername] = useState(false);
-    const router = useRouter();
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-    const {
-        register,
-        handleSubmit,
-        formState: { errors },
-        setValue,
-        clearErrors,
-    } = useForm<z.infer<typeof signUpSchema>>({
-        resolver: zodResolver(signUpSchema),
-    });
-
-    // Debounced username check function
-    const checkUsername = useCallback(
-        debounce(async (username: string) => {
-            if (username.length < 3) {
-                setUsernameAvailable(null);
-                setIsCheckingUsername(false);
-                return;
-            }
-
-            setIsCheckingUsername(true);
-            try {
-                const response = await axios.get(`/api/check-username-unique?username=${username}`);
-                setUsernameAvailable(response.data.success);
-            } catch (error) {
-                console.error("Error checking username:", error);
-                setUsernameAvailable(null);
-            } finally {
-                setIsCheckingUsername(false);
-            }
-        }, 500), // 500ms debounce time
-        []
+  if (!role) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-center">
+        <p className="text-sm">
+          No role selected. Please go back to{' '}
+          <a href="/o-sign-up" className="underline text-purple-600">
+            choose your role
+          </a>
+          .
+        </p>
+      </div>
     );
+  }
 
-    // Effect to trigger debounce when username changes
-    useEffect(() => {
-        if (username) checkUsername(username);
-    }, [username, checkUsername]);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
 
-    const onSubmit = async (data: z.infer<typeof signUpSchema>) => {
-        if (!checkBox || usernameAvailable === false){
-            console.log("checkBox has to be clicked");
-            return;
-        }; // Prevent submission if username is taken
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
-        setIsSubmitting(true);
-        try {
-            const response = await axios.post("/api/sign-up", data);
-            router.replace('/sign-in');
-        } catch (error) {
-            const axiosError = error as AxiosError<ApiResponse>;
-            console.log(axiosError.response?.data.message ?? "An error occurred");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+    try {
+      const res = await axios.post('/api/sign-up', {
+        ...formData,
+        role,
+      });
 
-    return (<>
-        <Navbar/>
-        <section className="flex justify-between">
-            {/* Left Side */}
-            <div className="hidden lg:flex bg-gradient-to-tr from-[#5d57ee]/90 to-purple-400 backdrop-blur-4xl brightness-120 h-screen w-[500px]"></div>
+      if (res.data.success) {
+        router.push('/sign-in');
+      } else {
+        setError(res.data.message || 'Something went wrong.');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Error during signup.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            {/* Right Side - Form Section */}
-            <div className="flex flex-col justify-center items-center w-full gap-10 h-screen">
-                <h1 className="font-['Inter'] text-[24px] font-bold max-md:text-[20px]">
-                    Sign up to Stream <span className="text-[#5D57EE]">Calendar</span>
-                </h1>
+  return (
+    <main className="min-h-screen flex items-center justify-center p-4 bg-background text-foreground">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-md space-y-4 bg-white dark:bg-zinc-900 p-6 rounded-lg shadow"
+      >
+        <h2 className="text-xl font-semibold text-center">
+          Sign up as <span className="capitalize">{role}</span>
+        </h2>
 
-                <form className="max-md:flex-col max-md:ml-5 mr-5" onSubmit={handleSubmit(onSubmit)}>
-                    {/* Name & Username */}
-                    <div className="flex justify-between gap-12 max-md:flex-col max-md:gap-4">
-                        <div>
-                            <h6 className="font-['Inter'] text-[16px] font-semibold">Name</h6>
-                            <input
-                                type="text"
-                                className="border border-[#5D57EE80] rounded-xl w-[200px] h-12 p-4 max-md:w-[360px]"
-                                {...register("name")}
-                            />
-                            {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
-                        </div>
+        <input
+          type="text"
+          name="name"
+          placeholder="Full Name"
+          required
+          value={formData.name}
+          onChange={handleChange}
+          className="w-full p-2 border rounded dark:bg-zinc-800"
+        />
 
-                        <div>
-                            <h6 className="font-['Inter'] text-[16px] font-semibold">Username</h6>
-                            <input
-                                type="text"
-                                className="border border-[#5D57EE80] rounded-xl w-[200px] h-12 p-4 max-md:w-[360px]"
-                                {...register("username")}
-                                value={username}
-                                onChange={(e) => {
-                                    setUsername(e.target.value);
-                                    setValue("username", e.target.value); // Ensure it updates form state
-                                    if (errors.username) clearErrors("username");
-                                }}
-                            />
-                            {errors.username && (
-                                <p className="text-red-500 text-sm">{errors.username.message}</p>
-                            )}
-                            {/* Username availability feedback */}
-                            {isCheckingUsername && (
-                                <p className="text-blue-500 text-sm">Checking...</p>
-                            )}
-                            {usernameAvailable === false && (
-                                <p className="text-red-500 text-sm">Username is already taken</p>
-                            )}
-                            {usernameAvailable === true && (
-                                <p className="text-green-500 text-sm">Username is available</p>
-                            )}
-                        </div>
-                    </div>
+        <input
+          type="email"
+          name="email"
+          placeholder="Email"
+          required
+          value={formData.email}
+          onChange={handleChange}
+          className="w-full p-2 border rounded dark:bg-zinc-800"
+        />
 
-                    {/* Email */}
-                    <div className="mt-3 mb-3">
-                        <h6 className="font-['Inter'] text-[16px] font-semibold">Email</h6>
-                        <input
-                            type="email"
-                            className="border border-[#5D57EE80] rounded-xl w-[540px] h-12 p-4 max-md:w-[360px]"
-                            {...register("email")}
-                        />
-                        {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
-                    </div>
+        <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          required
+          value={formData.password}
+          onChange={handleChange}
+          className="w-full p-2 border rounded dark:bg-zinc-800"
+        />
 
-                    {/* Password */}
-                    <div>
-  <h6 className="font-['Inter'] text-[16px] font-semibold">Password</h6>
-  <div className="relative">
-    <input
-      type={showPassword ? "text" : "password"}
-      className="border border-[#5D57EE80] rounded-xl w-[540px] h-12 p-4 pr-12 max-md:w-[360px]"
-      {...register("password")}
-    />
-    <button
-      type="button"
-      onClick={() => setShowPassword(!showPassword)}
-      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-    >
-      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-    </button>
-  </div>
-  {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
-</div>
+        {error && <p className="text-red-500 text-sm">{error}</p>}
 
-                    {/* Terms & Conditions Checkbox */}
-                    <div className="flex gap-2 mt-3">
-                        <input
-                            type="checkbox"
-                            className="border border-[#5D57EE80] rounded-xl size-6"
-                            onChange={() => setCheckBox(!checkBox)}
-                        />
-                        <label className="text-[12px]">
-                            I agree with StreamCalendar’s Terms of Service, Privacy Policy, and <br className="hidden md:block" />
-                            default Notification Settings.
-                        </label>
-                    </div>
-
-                    {/* Sign Up Button */}
-                    <Button
-                        type="submit"
-                        title="Sign up"
-                        variant="btn_big1"
-                        onClick={() => {}}
-                        disabled={!checkBox || isSubmitting || usernameAvailable === false || isCheckingUsername} // Prevent submission if username is taken or still checking
-                    />
-                </form>
-
-                <h6 className="text-sm">
-                    Already have an account? <Link href="/sign-in">Sign In</Link>
-                </h6>
-            </div>
-        </section></>
-    );
-};
-
-export default SignUpPage;
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 transition"
+        >
+          {loading ? 'Creating account...' : 'Sign Up'}
+        </button>
+      </form>
+    </main>
+  );
+}

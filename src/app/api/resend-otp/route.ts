@@ -18,12 +18,11 @@ export async function POST(request: Request) {
 
         let otpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-
         user.forgotPassCode = otpCode;
         user.forgotPassCodeExpiry = new Date(Date.now() + 300 * 1000);
         await user.save();
 
-        const username = user.username;
+        const username = user.name;
 
         const emailResponse = await sendForgotPassEmail(
           email,

@@ -1,72 +1,87 @@
-"use client";
+'use client';
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import Button from "@/app/components/ui/Button";
-import { confirmPasswordSchema } from "@/schemas/confirmPasswordSchema";
-import axios, { AxiosError } from "axios";
-import { ApiResponse } from "@/types/ApiResponse";
-import Navbar from "@/app/components/Navbar";
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import axios from 'axios';
 
-export default function VerifyOtp() {
+export default function NewPasswordPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const email = searchParams.get("email"); // Extract email from URL
+  const email = useSearchParams().get('email') || '';
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<z.infer<typeof confirmPasswordSchema>>({
-    resolver: zodResolver(confirmPasswordSchema),
-  });
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const onSubmit = async (data: z.infer<typeof confirmPasswordSchema>) => {
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (password !== confirm) {
+      setError("Passwords don't match.");
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      const response = await axios.post("/api/set-new-pass", { ...data, email });
-      router.replace("/sign-in");
-    } catch (error) {
-      const axiosError = error as AxiosError<ApiResponse>;
-      console.log(axiosError);
+      const res = await axios.post('/api/change-password', {
+        email,
+        newPassword: password,
+      });
+
+      if (res.status === 200) {
+        setSuccess('Password changed. Redirecting to sign in...');
+        setTimeout(() => router.push('/sign-in'), 1500);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Couldn't update password.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (<>
-  <Navbar/>
-    <section className="flex justify-between">
-      <div className="hidden lg:flex  bg-gradient-to-tr from-[#5d57ee]/90 to-purple-400 h-screen w-[500px]"></div>
+  return (
+    <main className="min-h-screen flex items-center justify-center bg-background text-foreground px-4">
+      <form
+        onSubmit={handleReset}
+        className="max-w-md w-full bg-white dark:bg-zinc-900 p-6 rounded-lg shadow space-y-4"
+      >
+        <h2 className="text-xl font-semibold text-center">Create New Password</h2>
 
-      <div className="flex flex-col justify-center items-center w-full gap-10 h-screen">
-        <h1 className="font-['inter'] text-[24px] font-bold max-md:text-[20px]">
-          Change Password
-        </h1>
+        <input
+          type="password"
+          placeholder="New password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          className="w-full p-2 rounded border dark:bg-zinc-800"
+        />
 
-        <form className="max-md:flex-col max-md:ml-5 mr-5" onSubmit={handleSubmit(onSubmit)}>
-          <div className="mt-3 mb-3">
-            <h6 className="font-['inter'] text-[16px] font-semibold">New Password</h6>
-            <input
-              className="border border-[#5D57EE80] rounded-xl w-[540px] h-12 p-4 max-md:w-[360px]"
-              type="password"
-              {...register("password")}
-            />
-            {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
-          </div>
+        <input
+          type="password"
+          placeholder="Confirm password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          required
+          className="w-full p-2 rounded border dark:bg-zinc-800"
+        />
 
-          <div>
-            <h6 className="font-['inter'] text-[16px] font-semibold">Confirm Password</h6>
-            <input
-              className="border border-[#5D57EE80] rounded-xl w-[540px] h-12 p-4 max-md:w-[360px]"
-              type="password"
-              {...register("confirmPassword")}
-            />
-            {errors.confirmPassword && <p className="text-red-500 text-sm">{errors.confirmPassword.message}</p>}
-          </div>
+        {error && <p className="text-red-500 text-sm">{error}</p>}
+        {success && <p className="text-green-600 text-sm">{success}</p>}
 
-          <Button type="submit" title="Submit" variant="btn_big1" onClick={() => {}} />
-        </form>
-      </div>
-    </section></>
+        <button
+          type="submit"
+          disabled={loading}
+          className={`w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 ${
+            loading && 'opacity-50 cursor-not-allowed'
+          }`}
+        >
+          {loading ? 'Saving...' : 'Save Password'}
+        </button>
+      </form>
+    </main>
   );
 }

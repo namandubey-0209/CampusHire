@@ -35,7 +35,7 @@ export async function POST(request: Request) {
       await user.save();
     }
 
-    const username = user.username;
+    const username = user.name;
 
     const emailResponse = await sendForgotPassEmail(
       email,

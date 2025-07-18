@@ -8,17 +8,7 @@ export async function POST(request: Request) {
   await dbConnect();
 
   try {
-    const { name, username, email, password } = await request.json();
-
-    const normalizedUsername = username.toLowerCase();
-
-    const existingUserByUsername = await User.findOne({ username: normalizedUsername });
-    if (existingUserByUsername) {
-      return new Response(
-        JSON.stringify({ success: false, message: "Username is taken" }),
-        { status: 400 }
-      );
-    }
+    const { name, email, password, role } = await request.json();
 
     const existingUserByEmail = await User.findOne({ email });
     if (existingUserByEmail) {
@@ -32,9 +22,11 @@ export async function POST(request: Request) {
 
     const newUser = new User({
       name,
-      username: normalizedUsername,
       email,
       password: hashedPassword,
+      role,
+      forgotPassCode: null,
+      forgotPassCodeExpiry: null,
     });
 
     await newUser.save();

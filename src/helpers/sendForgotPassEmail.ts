@@ -4,7 +4,7 @@ import { ApiResponse } from "@/types/ApiResponse";
 
 export async function sendForgotPassEmail(
   forgotPassEmail: string,
-  forgotPassUsername: string,
+  forgotPassName: string,
   forgotPassCode: string
 ): Promise<ApiResponse> {
   try {
@@ -12,7 +12,7 @@ export async function sendForgotPassEmail(
       from: "onboarding@resend.dev",
       to: forgotPassEmail,
       subject: "Password reset Code",
-      react: ForgotPassEmail({ username: forgotPassUsername, otp: forgotPassCode }),
+      react: ForgotPassEmail({ username: forgotPassName, otp: forgotPassCode }),
     });
     return { success: true, message: "Forgot password email sent successfully." };
   } catch (emailError) {

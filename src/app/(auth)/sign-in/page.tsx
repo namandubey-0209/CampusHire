@@ -1,139 +1,155 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { signInSchema } from "@/schemas/signInSchema";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
-import googleIcon1 from '../../../asset/googleIcon1.svg';
-import Link from "next/link";
-import Button from "@/app/components/ui/Button";
-import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
-import Navbar from "@/app/components/Navbar";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
+import axios from 'axios';
 
-export default function SignInForm() {
+export default function SignInPage() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  
-  const {
-    register,        
-    handleSubmit,     
-    formState: { errors },
-    watch // Add watch to the destructured useForm return
-  } = useForm<z.infer<typeof signInSchema>>({
-    resolver: zodResolver(signInSchema), 
-  });
 
-  // Move watch usage inside component after useForm hook
-  const watchedValues = watch();
-  const isFormValid = watchedValues.identifier?.trim() && watchedValues.password?.trim();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  const onSubmit = async (data: z.infer<typeof signInSchema>) => {
-    setIsSubmitting(true);
-    const result = await signIn("credentials", {
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const [otpSent, setOtpSent] = useState(false);
+  const [canResend, setCanResend] = useState(false);
+  const [timer, setTimer] = useState(120); // 2 minutes
+
+  // 🕒 Countdown for resend
+  useEffect(() => {
+    if (otpSent && !canResend && timer > 0) {
+      const interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    } else if (timer <= 0) {
+      setCanResend(true);
+    }
+  }, [otpSent, timer, canResend]);
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    const res = await signIn('credentials', {
+      email,
+      password,
       redirect: false,
-      identifier: data.identifier,
-      password: data.password,
-      callbackUrl: "/dashboard",
     });
 
-    if (result?.error) {
-      console.log("error signing in");
-      setIsSubmitting(false);
-      return;
+    if (res?.ok) {
+      router.push('/dashboard');
+    } else {
+      setError('Invalid email or password');
     }
 
-    if (result?.ok) {
-      console.log(result);
-      router.push("/dashboard");
+    setLoading(false);
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) return setError('Please enter your email first.');
+
+    try {
+      setError('');
+      const res = await axios.post('/api/send-otp', { email });
+
+      if (res.data.success) {
+        setOtpSent(true);
+        setTimer(120); // 2 min timer
+        setCanResend(false);
+        router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
+      } else {
+        setError(res.data.message || 'Failed to send OTP');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Error sending OTP');
+    }
+  };
+
+  const handleResendOTP = async () => {
+    try {
+      const res = await axios.post('/api/resend-otp', { email });
+
+      if (res.data.success) {
+        setError('');
+        setTimer(120);
+        setCanResend(false);
+        setOtpSent(true);
+        router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
+      } else {
+        setError(res.data.message || 'Failed to resend OTP');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Error resending OTP');
     }
   };
 
   return (
-    <>
-      <Navbar/>
-      <section className="flex justify-between">
-        {/* Left Side (Hidden on Small Screens) */}
-        <div className="hidden lg:flex bg-gradient-to-tr from-[#5d57ee]/90 to-purple-400 backdrop-blur-4xl brightness-120h-screen w-[500px]"></div>
+    <main className="min-h-screen flex items-center justify-center bg-background text-foreground px-4">
+      <div className="w-full max-w-md bg-white dark:bg-zinc-900 p-6 rounded-lg shadow space-y-6">
+        <h2 className="text-2xl font-bold text-center">Sign In</h2>
 
-        {/* Right Side - Form Section */}
-        <div className="flex flex-col justify-center items-center w-full gap-10 h-screen">
-          <h1 className="font-['Inter'] text-[24px] font-bold max-md:text-[20px]">
-            Sign in to Stream <span className="text-[#5D57EE]">Calendar</span>
-          </h1>
+        {error && <p className="text-sm text-red-600 text-center">{error}</p>}
 
-          {/* Sign in with Google */}
-          <Button
-            type="button"
-            title="Sign in with Google"
-            variant="btn_big1"
-            icon={googleIcon1}
-            onClick={() => {}}
+        <form onSubmit={handleSignIn} className="space-y-4">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            required
+            className="w-full p-3 border rounded dark:bg-zinc-800"
           />
 
-          <h2 className="-mt-6 -mb-8">---------- or ----------</h2>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            required
+            className="w-full p-3 border rounded dark:bg-zinc-800"
+          />
 
-          {/* Sign In Form */}
-          <form className="max-md:flex-col max-md:ml-5 mr-5" onSubmit={handleSubmit(onSubmit)}>
-            {/* Email Input */}
-            <div className="mt-3 mb-3">
-              <h6 className="font-['Inter'] text-[16px] font-semibold">Email</h6>
-              <input
-                className="border border-[#5D57EE80] rounded-xl w-[540px] h-12 p-4 max-md:w-[360px]"
-                type="text"
-                {...register("identifier")} // Connects to useForm
-              />
-              {errors.identifier && (
-                <p className="text-red-500 text-sm">{errors.identifier.message}</p>
-              )}
-            </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 transition disabled:opacity-50"
+          >
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
 
-            {/* Password Input */}
-            <div>
-              <div className="flex justify-between items-center">
-                <h6 className="font-['Inter'] text-[16px] font-semibold">Password</h6>
-                <Link
-                  href="/verify-otp"
-                  className="text-[#5D57EE] text-sm font-medium hover:underline"
-                >
-                  Forgot?
-                </Link>
-              </div>
+        <div className="flex flex-col items-center gap-2 mt-4">
+          <button
+            type="button"
+            onClick={handleForgotPassword}
+            disabled={!email || otpSent}
+            className="text-sm text-purple-600 hover:underline disabled:opacity-50"
+          >
+            Forgot password?
+          </button>
 
-              <div className="relative mb-3">
-                <input
-                  className="border border-[#5D57EE80] rounded-xl w-[540px] h-12 p-4 pr-12 max-md:w-[360px]"
-                  type={showPassword ? "text" : "password"}
-                  {...register("password")} // Connects to useForm
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
+          {otpSent && !canResend && (
+            <p className="text-xs text-muted-foreground">
+              Wait {timer} seconds to resend OTP
+            </p>
+          )}
 
-              {errors.password && (
-                <p className="text-red-500 text-sm">{errors.password.message}</p>
-              )}
-            </div>
-
-            {/* Sign in Button */}
-            <Button
-              type="submit"
-              title="Sign in"
-              variant="btn_big2"
-              onClick={() => {}}
-              disabled={!isFormValid || isSubmitting} // Enable button validation
-            />
-          </form>
+          {otpSent && canResend && (
+            <button
+              type="button"
+              onClick={handleResendOTP}
+              className="text-sm text-purple-600 hover:underline"
+            >
+              Resend OTP?
+            </button>
+          )}
         </div>
-      </section>
-    </>
+      </div>
+    </main>
   );
 }
