@@ -1,0 +1,1 @@
+//simple notifications page

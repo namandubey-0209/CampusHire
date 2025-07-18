@@ -1,0 +1,1 @@
+// Will use condition rendering to show the page according to the user type
