@@ -1,8 +1,8 @@
-// components/CompanyDetail.tsx
 "use client";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 import { Building2, Globe, MapPin, Edit, Save } from "lucide-react";
 
 interface Job {
@@ -34,42 +34,48 @@ export default function CompanyDetail({ companyId }: { companyId: string }) {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [cRes, jRes] = await Promise.all([
-        fetch(`/api/company/${companyId}`),
-        fetch(`/api/jobs?companyId=${companyId}`)
-      ]);
-      const cData = await cRes.json();
-      const jData = await jRes.json();
-      if (cData.success) {
-        setCompany(cData.company);
-        setForm(cData.company);
+      try {
+        const [cRes, jRes] = await Promise.all([
+          axios.get<{ success: boolean; companyProfile: Company }>(`/api/company/${companyId}`),
+          axios.get<{ success: boolean; jobs: Job[] }>(`/api/jobs?companyId=${companyId}`)
+        ]);
+
+        if (cRes.data.success) {
+          setCompany(cRes.data.companyProfile);
+          setForm(cRes.data.companyProfile);
+        }
+        if (jRes.data.success) {
+          setJobs(jRes.data.jobs);
+        }
+      } catch (err) {
+        console.error("Error fetching company details:", err);
+        setError("Failed to load company details.");
+      } finally {
+        setLoading(false);
       }
-      if (jData.success) setJobs(jData.jobs);
-      setLoading(false);
     })();
   }, [companyId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSave = async () => {
     setSaving(true);
     setError("");
     try {
-      const res = await fetch(`/api/company/${companyId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
+      const { data } = await axios.put<{ success: boolean; company: Company; message?: string }>(
+        `/api/company/${companyId}`,
+        form
+      );
       if (data.success) {
         setCompany(data.company);
         setEditMode(false);
       } else {
         setError(data.message || "Failed to save");
       }
-    } catch {
+    } catch (err) {
+      console.error("Error saving company details:", err);
       setError("Error saving details");
     } finally {
       setSaving(false);
@@ -92,6 +98,35 @@ export default function CompanyDetail({ companyId }: { companyId: string }) {
       </div>
     );
   }
+
+  const renderWebsite = () => {
+    if (!company.website) return <p className="text-gray-500 italic">—</p>;
+    try {
+      const hostname = new URL(company.website).hostname;
+      return (
+        <a
+          href={company.website}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline"
+        >
+          {hostname}
+        </a>
+      );
+    } catch {
+      // Fallback if URL is invalid
+      return (
+        <a
+          href={company.website.startsWith("http") ? company.website : `https://${company.website}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline"
+        >
+          {company.website}
+        </a>
+      );
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -171,37 +206,41 @@ export default function CompanyDetail({ companyId }: { companyId: string }) {
 
         {/* Contact Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {["location", "website"].map(field => (
-            <div key={field}>
-              <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-1">
-                {field === "location" ? <MapPin className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
-                <span className="capitalize">{field}</span>
-              </label>
-              {editMode ? (
-                <input
-                  name={field}
-                  value={(form as any)[field] || ""}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500"
-                />
-              ) : company[field as keyof Company] ? (
-                field === "website" ? (
-                  <a
-                    href={company.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    {new URL(company.website!).hostname}
-                  </a>
-                ) : (
-                  <p className="text-gray-900">{company.location}</p>
-                )
-              ) : (
-                <p className="text-gray-500 italic">—</p>
-              )}
-            </div>
-          ))}
+          <div>
+            <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-1">
+              <MapPin className="h-4 w-4" />
+              <span>Location</span>
+            </label>
+            {editMode ? (
+              <input
+                name="location"
+                value={form.location || ""}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500"
+              />
+            ) : company.location ? (
+              <p className="text-gray-900">{company.location}</p>
+            ) : (
+              <p className="text-gray-500 italic">—</p>
+            )}
+          </div>
+
+          <div>
+            <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-1">
+              <Globe className="h-4 w-4" />
+              <span>Website</span>
+            </label>
+            {editMode ? (
+              <input
+                name="website"
+                value={form.website || ""}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500"
+              />
+            ) : (
+              renderWebsite()
+            )}
+          </div>
         </div>
 
         {error && <p className="text-red-600">{error}</p>}

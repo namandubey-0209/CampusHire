@@ -86,9 +86,10 @@ export async function PUT(
         existingJob.companyName = body.companyName ?? existingJob.companyName;
         existingJob.location = body.location ?? existingJob.location;
         existingJob.description = body.description ?? existingJob.description;
-        existingJob.salary = body.salary ?? existingJob.salary;
-        existingJob.skills = body.skills ?? existingJob.skills;
-        existingJob.experience = body.experience ?? existingJob.experience;
+        existingJob.mode = body.mode ?? existingJob.mode;
+        existingJob.minCGPA = body.minCGPA ?? existingJob.minCGPA;
+        existingJob.eligibleBranches = body.eligibleBranches ?? existingJob.eligibleBranches;
+        existingJob.lastDateToApply = body.lastDateToApply ? new Date(body.lastDateToApply) : existingJob.lastDateToApply;
 
         await existingJob.save();
 

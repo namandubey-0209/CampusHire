@@ -65,16 +65,6 @@ export default function Header() {
               </Link>
             )}
 
-            {/* Admin-only navigation */}
-            {isAdmin && (
-              <Link
-                href="/company/manage"
-                className="text-gray-600 hover:text-gray-900 transition-colors flex items-center space-x-1"
-              >
-                <Building2 className="h-4 w-4" />
-                <span>Manage Companies</span>
-              </Link>
-            )}
           </nav>
         </div>
 

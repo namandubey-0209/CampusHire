@@ -3,7 +3,7 @@ import mongoose, { Schema, Document, Types } from "mongoose";
 export interface IStudentProfile extends Document {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
-  email: string; // to be considered
+  email?: string; // to be considered
   enrollmentNo: string;
   branch: string;
   year: number;
@@ -16,7 +16,7 @@ export interface IStudentProfile extends Document {
 const StudentProfileSchema: Schema<IStudentProfile> = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    email: { type: String, required: true },
+    email: { type: String, required: false },
     enrollmentNo: { type: String, required: true },
     branch: { type: String, required: true },
     year: { type: Number, required: true },

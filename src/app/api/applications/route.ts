@@ -3,6 +3,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/dbConnect";
 import Application from "@/model/Application";
 import StudentProfile from "@/model/StudentProfile";
+import Job from "@/model/Job";
 
 export async function GET() {
   await dbConnect();
@@ -21,10 +22,11 @@ export async function GET() {
     }
 
     const applications = await Application.find({ studentId: studentProfile._id })
-      .populate({
-        path: "jobId",
-        select: "title companyName companyId mode"
-      });
+    .populate({
+      path: "jobId",
+      model: Job,                              
+      select: "title companyName companyId mode"
+    });
 
     return Response.json({ success: true, applications }, { status: 200 });
 

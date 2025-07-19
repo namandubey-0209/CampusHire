@@ -23,12 +23,12 @@ export async function POST(req: Request) {
 
     // Send notification
     await Notification.create({
-      userId: app.studentId,
+      recipientId: app.studentId,
+      type: accepted ? "status_update" : "job_applied",
       message: accepted
         ? "Congratulations! Your application has been accepted."
         : "We’re sorry—your application has been rejected.",
-      link: `/applications?status=${app.status}`,
-      read: false,
+      isRead: false,
     });
   }));
 

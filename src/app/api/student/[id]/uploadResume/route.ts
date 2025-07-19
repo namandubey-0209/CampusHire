@@ -11,7 +11,6 @@ export async function POST(
     await dbConnect();
     
     const { id } = await params;
-    console.log("Uploading for userId:", id);
 
     const formData = await request.formData();
     const file = formData.get("file") as File;

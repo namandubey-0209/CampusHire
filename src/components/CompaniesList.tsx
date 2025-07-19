@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import axios from "axios";
 import { Building2 } from "lucide-react";
 
 interface Company {
@@ -17,11 +18,11 @@ export default function CompaniesList() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/company")
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setCompanies(data.companies);
+    axios.get<{ success: boolean; companies: Company[] }>("/api/companies")
+      .then(res => {
+        if (res.data.success) setCompanies(res.data.companies);
       })
+      .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
@@ -36,7 +37,7 @@ export default function CompaniesList() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Companies</h1>
-      
+
       {companies.length === 0 ? (
         <div className="text-center py-12">
           <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -50,7 +51,7 @@ export default function CompaniesList() {
           {companies.map(c => (
             <Link
               key={c._id}
-              href={`/companies/${c._id}`}
+              href={`/company/${c._id}`}
               className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-sm transition-shadow flex flex-col"
             >
               {c.logoUrl ? (

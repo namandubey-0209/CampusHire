@@ -1,11 +1,45 @@
 // src/components/StudentDashboard.tsx
 "use client";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import axios from "axios";
 import { Plus, Briefcase, User, TrendingUp } from "lucide-react";
+
+interface Application {
+  _id: string;
+  status: "applied" | "accepted" | "rejected";
+}
 
 export default function StudentDashboard() {
   const { data: session } = useSession();
+  const [apps, setApps] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetchApplications();
+  }, []);
+
+  const fetchApplications = async () => {
+    setLoading(true);
+    try {
+      const { data } = await axios.get<{ success: boolean; applications: Application[] }>("/api/applications");
+      if (data.success) {
+        setApps(data.applications);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load applications");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const total = apps.length;
+  const inProgress = apps.filter(a => a.status === "applied").length;
+  const accepted = apps.filter(a => a.status === "accepted").length;
+  const rejected = apps.filter(a => a.status === "rejected").length;
 
   return (
     <div className="space-y-6">
@@ -70,24 +104,29 @@ export default function StudentDashboard() {
       {/* Stats Overview */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Statistics</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">0</div>
-            <div className="text-sm text-gray-600">Applications</div>
+        {error && <p className="text-red-600 mb-2">{error}</p>}
+        {loading ? (
+          <p className="text-gray-600">Loading…</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{total}</div>
+              <div className="text-sm text-gray-600">Applications</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-yellow-600">{inProgress}</div>
+              <div className="text-sm text-gray-600">In Progress</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{accepted}</div>
+              <div className="text-sm text-gray-600">Accepted</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-600">{rejected}</div>
+              <div className="text-sm text-gray-600">Rejected</div>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-yellow-600">0</div>
-            <div className="text-sm text-gray-600">In Progress</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">0</div>
-            <div className="text-sm text-gray-600">Accepted</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-red-600">0</div>
-            <div className="text-sm text-gray-600">Rejected</div>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

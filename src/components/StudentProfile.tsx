@@ -149,7 +149,7 @@ export default function StudentProfile({ userId, editable }: Props) {
       }
 
       const { data } = await axios({
-        method: profile ? "PUT" : "POST",
+        method: profile ? "PATCH" : "POST",
         url: "/api/student/profile",
         data: {
           enrollmentNo: form.enrollmentNo,
@@ -330,7 +330,7 @@ export default function StudentProfile({ userId, editable }: Props) {
               placeholder="Enter your full name"
             />
           ) : (
-            <p className="text-gray-900">{profile?.name}</p>
+            <p className="text-gray-900">{session?.user?.name}</p>
           )}
         </div>
 

@@ -151,14 +151,6 @@ export default function Sidebar() {
             </div>
             
             <LinkItem 
-              href="/admin/companies" 
-              icon={Building2} 
-              isActive={isActive("/admin/companies")}
-            >
-              Manage Companies
-            </LinkItem>
-            
-            <LinkItem 
               href="/admin/students" 
               icon={Users} 
               isActive={isActive("/admin/students")}
@@ -166,13 +158,6 @@ export default function Sidebar() {
               View Students
             </LinkItem>
             
-            <LinkItem 
-              href="/admin/settings" 
-              icon={Settings} 
-              isActive={isActive("/admin/settings")}
-            >
-              Settings
-            </LinkItem>
           </>
         )}
 
