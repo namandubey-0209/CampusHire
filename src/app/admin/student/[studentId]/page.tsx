@@ -2,7 +2,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { redirect } from "next/navigation";
-import DashboardLayout from "@/components/DashboardLayout";
+import DashboardLayout from "../../../../components/DashboardLayout";
 import StudentProfile from "@/components/StudentProfile";
 
 export default async function ProfilePage() {
@@ -11,8 +11,7 @@ export default async function ProfilePage() {
 
   return (
     <DashboardLayout>
-      {/* editable always true for own profile */}
-      <StudentProfile userId={session.user._id as string} editable={true} />
+      <StudentProfile userId={session.user._id as string} editable />
     </DashboardLayout>
   );
 }
