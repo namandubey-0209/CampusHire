@@ -1,136 +1,92 @@
-// components/JobApplicants.tsx
 "use client";
 import { useEffect, useState } from "react";
+import axios from "axios";
 import Link from "next/link";
-import { 
-  ArrowLeft, 
-  Users, 
-  Calendar,
-  GraduationCap,
-  Mail,
-  Phone,
-  Download,
-  Eye
-} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Users, Calendar, Eye, CheckCircle, XCircle, Clock } from "lucide-react";
 
 interface Applicant {
   _id: string;
-  jobId: string;
-  studentId: {
-    _id: string;
-    userId: {
-      _id: string;
-      name: string;
-    };
-  };
+  studentId: { _id: string; userId: { _id: string; name: string } };
   status: string;
   appliedAt: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
-interface Job {
-  _id: string;
-  title: string;
-  companyName: string;
-}
-
-interface JobApplicantsProps {
-  jobId: string;
-}
-
-export default function JobApplicants({ jobId }: JobApplicantsProps) {
+export default function JobApplicants({ jobId }: { jobId: string }) {
+  const router = useRouter();
   const [applicants, setApplicants] = useState<Applicant[]>([]);
-  const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("applied");
 
   useEffect(() => {
     fetchApplicants();
-    fetchJob();
-  }, [jobId]);
+  }, []);
 
-  const fetchApplicants = async () => {
+  async function fetchApplicants() {
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await fetch(`/api/jobs/${jobId}/applicants`);
-      const data = await response.json();
-
-      if (data.success) {
-        setApplicants(data.applicants);
-      } else {
-        setError(data.message || "Failed to fetch applicants");
-      }
-    } catch (error) {
-      setError("Error fetching applicants");
-      console.error("Error fetching applicants:", error);
+      const { data } = await axios.get<{ success: boolean; applicants: Applicant[] }>(
+        `/api/jobs/${jobId}/applicants`
+      );
+      if (data.success) setApplicants(data.applicants);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const fetchJob = async () => {
-    try {
-      const response = await fetch(`/api/jobs/${jobId}`);
-      const data = await response.json();
+  function toggleSelect(id: string) {
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
 
-      if (data.success) {
-        setJob(data.job);
-      }
-    } catch (error) {
-      console.error("Error fetching job:", error);
+  async function submitDecisions() {
+    if (selected.length === 0) {
+      setError("Select at least one applicant to accept.");
+      return;
     }
-  };
-
-  const updateApplicationStatus = async (applicationId: string, status: string) => {
+    setError("");
     try {
-      const response = await fetch(`/api/applications/${applicationId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setApplicants(prev => 
-          prev.map(app => 
-            app._id === applicationId ? { ...app, status } : app
-          )
-        );
-      } else {
-        setError(data.message || "Failed to update status");
-      }
-    } catch (error) {
-      setError("Error updating application status");
-      console.error("Error updating application status:", error);
+      await axios.post("/api/applications/batch-update", { acceptedIds: selected, jobId });
+      await fetchApplicants();
+      setSelected([]);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to submit decisions.");
     }
-  };
+  }
 
-  const filteredApplicants = applicants.filter(applicant => {
-    if (statusFilter === "") return true;
-    return applicant.status === statusFilter;
-  });
+  async function updateApplicationStatus(applicationId: string, studentUserId: string, status: string) {
+    try {
+      await axios.put(`/api/applications/${applicationId}`, { status });
+      
+      // Update student's isPlaced status if accepted
+      if (status === "accepted") {
+        await axios.put(`/api/student/profile`, { 
+          userId: studentUserId, 
+          isPlaced: true 
+        });
+      }
+      
+      await fetchApplicants();
+    } catch (err) {
+      console.error(err);
+      setError("Failed to update application status.");
+    }
+  }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-  };
+  const filteredApplicants = applicants.filter(app => 
+    statusFilter === "all" || app.status === statusFilter
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "applied":
         return "bg-yellow-100 text-yellow-800";
-      case "shortlisted":
-        return "bg-blue-100 text-blue-800";
       case "accepted":
         return "bg-green-100 text-green-800";
       case "rejected":
@@ -140,70 +96,72 @@ export default function JobApplicants({ jobId }: JobApplicantsProps) {
     }
   };
 
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "applied":
+        return <Clock className="h-4 w-4" />;
+      case "accepted":
+        return <CheckCircle className="h-4 w-4" />;
+      case "rejected":
+        return <XCircle className="h-4 w-4" />;
+      default:
+        return null;
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center min-h-[300px]">
+        <div className="animate-spin h-8 w-8 border-b-2 border-blue-600 rounded-full" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
-          <Link
-            href={`/jobs/${jobId}`}
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+    <div className="max-w-6xl mx-auto space-y-6 p-6">
+      {/* Header & Actions */}
+      <div className="flex justify-between items-center">
+        <button
+          onClick={() => router.push(`/jobs/${jobId}`)}
+          className="flex items-center text-gray-600 hover:text-gray-900"
+        >
+          <ArrowLeft className="mr-2" /> Back to Job
+        </button>
+        
+        {statusFilter === "applied" && (
+          <button
+            onClick={submitDecisions}
+            disabled={selected.length === 0}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Job Applicants</h1>
-            {job && (
-              <p className="text-gray-600">
-                {job.title} at {job.companyName}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2 text-sm text-gray-500">
-            <Users className="h-4 w-4" />
-            <span>{filteredApplicants.length} applicants</span>
-          </div>
-        </div>
+            Submit Decisions ({selected.length} selected)
+          </button>
+        )}
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-        <div className="flex items-center space-x-4">
-          <label className="text-sm font-medium text-gray-700">Filter by status:</label>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">All Statuses</option>
-            <option value="applied">Applied</option>
-            <option value="shortlisted">Shortlisted</option>
-            <option value="accepted">Accepted</option>
-            <option value="rejected">Rejected</option>
-          </select>
-        </div>
+      {/* Status Filter */}
+      <div className="flex items-center space-x-4">
+        <label className="text-sm font-medium text-gray-700">Filter by status:</label>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="all">All Applications</option>
+          <option value="applied">Applied ({applicants.filter(a => a.status === "applied").length})</option>
+          <option value="accepted">Accepted ({applicants.filter(a => a.status === "accepted").length})</option>
+          <option value="rejected">Rejected ({applicants.filter(a => a.status === "rejected").length})</option>
+        </select>
       </div>
 
-      {/* Error Message */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <p className="text-red-800">{error}</p>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-600">{error}</p>
         </div>
       )}
 
       {/* Applicants List */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         {filteredApplicants.length === 0 ? (
           <div className="text-center py-12">
             <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -211,108 +169,77 @@ export default function JobApplicants({ jobId }: JobApplicantsProps) {
             <p className="text-gray-600">
               {applicants.length === 0 
                 ? "No one has applied for this job yet." 
-                : "No applicants match the selected filter."}
+                : `No applicants with status "${statusFilter}".`}
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Applicant
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Applied On
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredApplicants.map((applicant) => (
-                  <tr key={applicant._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                            <span className="text-blue-600 font-medium text-sm">
-                              {applicant.studentId.userId.name.charAt(0)}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {applicant.studentId.userId.name}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            Student ID: {applicant.studentId._id}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center text-sm text-gray-900">
-                        <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                        {formatDate(applicant.appliedAt)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusColor(applicant.status)}`}>
-                        {applicant.status}
+          <div className="divide-y divide-gray-200">
+            {filteredApplicants.map((app) => (
+              <div
+                key={app._id}
+                className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center space-x-4">
+                  {/* Checkbox only for "applied" status */}
+                  {statusFilter === "applied" && app.status === "applied" && (
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(app._id)}
+                      onChange={() => toggleSelect(app._id)}
+                      className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    />
+                  )}
+                  
+                  <div className="flex items-center space-x-3">
+                    <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 font-medium text-sm">
+                        {app.studentId.userId.name.charAt(0).toUpperCase()}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <Link
-                        href={`/student/${applicant.studentId._id}`}
-                        className="text-blue-600 hover:text-blue-900 inline-flex items-center"
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{app.studentId.userId.name}</p>
+                      <p className="text-sm text-gray-500">
+                        Applied on {new Date(app.appliedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Status Badge */}
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(app.status)}`}>
+                    {getStatusIcon(app.status)}
+                    <span className="ml-1">{app.status}</span>
+                  </span>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  {/* Individual Action Buttons */}
+                  {app.status === "applied" && (
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => updateApplicationStatus(app._id, app.studentId.userId._id, "accepted")}
+                        className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors"
                       >
-                        <Eye className="h-4 w-4 mr-1" />
-                        View Profile
-                      </Link>
-                      
-                      {applicant.status === "applied" && (
-                        <div className="inline-flex space-x-2">
-                          <button
-                            onClick={() => updateApplicationStatus(applicant._id, "shortlisted")}
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            Shortlist
-                          </button>
-                          <button
-                            onClick={() => updateApplicationStatus(applicant._id, "rejected")}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      )}
-                      
-                      {applicant.status === "shortlisted" && (
-                        <div className="inline-flex space-x-2">
-                          <button
-                            onClick={() => updateApplicationStatus(applicant._id, "accepted")}
-                            className="text-green-600 hover:text-green-900"
-                          >
-                            Accept
-                          </button>
-                          <button
-                            onClick={() => updateApplicationStatus(applicant._id, "rejected")}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => updateApplicationStatus(app._id, app.studentId.userId._id, "rejected")}
+                        className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition-colors"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                  
+                  <Link
+                    href={`/student/${app.studentId._id}`}
+                    className="text-blue-600 hover:text-blue-700 p-2 rounded-lg hover:bg-blue-50 transition-colors flex items-center"
+                    title="View Student Profile"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

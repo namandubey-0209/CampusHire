@@ -4,19 +4,20 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  ArrowLeft, 
-  MapPin, 
-  Clock, 
-  Building2, 
+import {
+  ArrowLeft,
+  MapPin,
+  Clock,
+  Building2,
   Calendar,
   GraduationCap,
   Users,
   CheckCircle,
   XCircle,
   Edit,
-  Trash2
+  Trash2,
 } from "lucide-react";
+import axios from "axios";
 
 interface Job {
   _id: string;
@@ -63,17 +64,15 @@ export default function JobDetail({ jobId }: JobDetailProps) {
   const fetchJob = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/jobs/${jobId}`);
-      const data = await response.json();
-
+      const { data } = await axios.get(`/api/jobs/${jobId}`);
       if (data.success) {
         setJob(data.job);
       } else {
         setError(data.message || "Failed to fetch job");
       }
-    } catch (error) {
+    } catch (err) {
       setError("Error fetching job");
-      console.error("Error fetching job:", error);
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -81,15 +80,15 @@ export default function JobDetail({ jobId }: JobDetailProps) {
 
   const checkApplicationStatus = async () => {
     try {
-      const response = await fetch("/api/applications");
-      const data = await response.json();
-      
+      const { data } = await axios.get("/api/applications");
       if (data.success) {
-        const hasAppliedToJob = data.applications.some((app: any) => app.jobId._id === jobId);
-        setHasApplied(hasAppliedToJob);
+        const applied = data.applications.some(
+          (app: any) => app.jobId._id === jobId
+        );
+        setHasApplied(applied);
       }
-    } catch (error) {
-      console.error("Error checking application status:", error);
+    } catch (err) {
+      console.error("Error checking application status:", err);
     }
   };
 
@@ -101,21 +100,17 @@ export default function JobDetail({ jobId }: JobDetailProps) {
     setSuccess("");
 
     try {
-      const response = await fetch(`/api/jobs/${jobId}/apply`, {
-        method: "POST",
-      });
-
-      const data = await response.json();
-
+      const { data } = await axios.post(`/api/jobs/${jobId}/apply`);
       if (data.success) {
         setSuccess("Application submitted successfully!");
         setHasApplied(true);
+        window.dispatchEvent(new CustomEvent("notification-update"));
       } else {
         setError(data.message || "Failed to apply");
       }
-    } catch (error) {
+    } catch (err) {
       setError("Error applying to job");
-      console.error("Error applying to job:", error);
+      console.error(err);
     } finally {
       setApplying(false);
     }
@@ -125,19 +120,15 @@ export default function JobDetail({ jobId }: JobDetailProps) {
     if (!confirm("Are you sure you want to delete this job?")) return;
 
     try {
-      const response = await fetch(`/api/jobs/${jobId}`, {
-        method: "DELETE",
-      });
-
-      const data = await response.json();
+      const { data } = await axios.delete(`/api/jobs/${jobId}`);
       if (data.success) {
         router.push("/jobs");
       } else {
         setError(data.message || "Failed to delete job");
       }
-    } catch (error) {
+    } catch (err) {
       setError("Error deleting job");
-      console.error("Error deleting job:", error);
+      console.error(err);
     }
   };
 
@@ -145,7 +136,7 @@ export default function JobDetail({ jobId }: JobDetailProps) {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
-      day: "numeric"
+      day: "numeric",
     });
   };
 
@@ -164,8 +155,12 @@ export default function JobDetail({ jobId }: JobDetailProps) {
   if (!job) {
     return (
       <div className="text-center py-12">
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Job not found</h3>
-        <p className="text-gray-600 mb-4">The job you're looking for doesn't exist.</p>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          Job not found
+        </h3>
+        <p className="text-gray-600 mb-4">
+          The job you're looking for doesn't exist.
+        </p>
         <Link
           href="/jobs"
           className="text-blue-600 hover:text-blue-700 font-medium"
@@ -251,7 +246,9 @@ export default function JobDetail({ jobId }: JobDetailProps) {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h2 className="text-xl font-semibold text-gray-900">{job.title}</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {job.title}
+                </h2>
                 {expired && (
                   <span className="bg-red-100 text-red-800 text-sm px-2 py-1 rounded-full">
                     Expired
@@ -325,20 +322,26 @@ export default function JobDetail({ jobId }: JobDetailProps) {
 
         {/* Job Description */}
         <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Job Description</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Job Description
+          </h3>
           <div className="prose prose-sm max-w-none">
-            <p className="text-gray-700 whitespace-pre-wrap">{job.description}</p>
+            <p className="text-gray-700 whitespace-pre-wrap">
+              {job.description}
+            </p>
           </div>
         </div>
 
         {/* Eligibility */}
         <div className="p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Eligibility</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Eligibility
+          </h3>
           <div className="space-y-3">
             <div>
               <p className="text-sm text-gray-500 mb-2">Eligible Branches</p>
               <div className="flex flex-wrap gap-2">
-                {job.eligibleBranches.map(branch => (
+                {job.eligibleBranches.map((branch) => (
                   <span
                     key={branch}
                     className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
@@ -349,7 +352,9 @@ export default function JobDetail({ jobId }: JobDetailProps) {
               </div>
             </div>
             <div>
-              <p className="text-sm text-gray-500 mb-1">Minimum CGPA Required</p>
+              <p className="text-sm text-gray-500 mb-1">
+                Minimum CGPA Required
+              </p>
               <p className="text-lg font-medium text-gray-900">{job.minCGPA}</p>
             </div>
           </div>

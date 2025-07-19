@@ -20,7 +20,7 @@ export async function PATCH(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
     const notification = await Notification.findById(id);
 
     if (!notification) {
@@ -30,14 +30,14 @@ export async function PATCH(
       );
     }
 
-    if (notification.read) {
+    if (notification.isRead) {
       return Response.json(
         { success: false, message: "Notification already read" },
         { status: 400 }
       );
     }
 
-    notification.read = true;
+    notification.isRead = true;
     await notification.save();
 
     return Response.json({ success: true, notification }, { status: 200 });

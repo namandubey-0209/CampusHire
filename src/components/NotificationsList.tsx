@@ -2,12 +2,13 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Bell, CheckCircle, Circle } from "lucide-react";
+import axios from "axios";
 
 interface Notification {
   _id: string;
+  type: string;
   message: string;
-  link: string;
-  read: boolean;
+  isRead: boolean;
   createdAt: string;
 }
 
@@ -17,19 +18,23 @@ export default function NotificationsList() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/notifications")
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setNotifications(data.notifications);
+    axios
+      .get("/api/notifications")
+      .then((res) => {
+        if (res.data.success) setNotifications(res.data.notifications);
       })
       .finally(() => setLoading(false));
   }, []);
 
   const markAsRead = async (id: string) => {
-    await fetch(`/api/notifications/${id}`, { method: "PUT" });
-    setNotifications(notifications.map(n =>
-      n._id === id ? { ...n, read: true } : n
-    ));
+    try {
+      await axios.patch(`/api/notifications/${id}/read`);
+      setNotifications(
+        notifications.map((n) => (n._id === id ? { ...n, isRead: true } : n))
+      );
+    } catch (error) {
+      console.error("Failed to mark notification as read:", error);
+    }
   };
 
   if (loading) {
@@ -46,23 +51,24 @@ export default function NotificationsList() {
       {notifications.length === 0 ? (
         <p className="text-gray-600">You have no notifications.</p>
       ) : (
-        notifications.map(n => (
+        notifications.map((n) => (
           <div
             key={n._id}
-            className={`flex items-center justify-between p-4 rounded-lg border ${
-              n.read ? "bg-gray-50 border-gray-200" : "bg-white border-blue-200"
+            onClick={() => markAsRead(n._id)}
+            className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer ${
+              n.isRead
+                ? "bg-gray-50 border-gray-200"
+                : "bg-white border-blue-200"
             } hover:shadow-sm transition`}
           >
-            <a
-              href={n.link}
-              onClick={() => markAsRead(n._id)}
-              className="flex items-center space-x-3 text-gray-800 hover:text-blue-600"
-            >
-              {n.read
-                ? <CheckCircle className="h-5 w-5 text-green-500" />
-                : <Circle className="h-5 w-5 text-blue-600" />}
+            <div className="flex items-center space-x-3 text-gray-800">
+              {n.isRead ? (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              ) : (
+                <Circle className="h-5 w-5 text-blue-600" />
+              )}
               <span>{n.message}</span>
-            </a>
+            </div>
             <span className="text-xs text-gray-500">
               {new Date(n.createdAt).toLocaleString()}
             </span>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import axios from "axios";
 import { 
   Briefcase, 
   MapPin, 
@@ -13,7 +14,8 @@ import {
   Search,
   Plus,
   Edit,
-  Trash2
+  Trash2,
+  CheckCircle
 } from "lucide-react";
 
 interface Job {
@@ -43,18 +45,23 @@ export default function JobsList() {
   const [locationFilter, setLocationFilter] = useState("");
   const [modeFilter, setModeFilter] = useState("");
   const [branchFilter, setBranchFilter] = useState("");
+  const [appliedJobs, setAppliedJobs] = useState<string[]>([]);
+  const [applying, setApplying] = useState<string | null>(null);
 
   const isAdmin = session?.user?.role === "admin";
+  const isStudent = session?.user?.role === "student";
 
   useEffect(() => {
     fetchJobs();
-  }, []);
+    if (isStudent) {
+      fetchUserApplications();
+    }
+  }, [isStudent]);
 
   const fetchJobs = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/jobs");
-      const data = await response.json();
+      const { data } = await axios.get("/api/jobs");
 
       if (data.success) {
         setJobs(data.jobs);
@@ -69,15 +76,23 @@ export default function JobsList() {
     }
   };
 
+  const fetchUserApplications = async () => {
+    try {
+      const { data } = await axios.get("/api/applications");
+      if (data.success) {
+        const jobIds = data.applications.map((app: any) => app.jobId._id || app.jobId);
+        setAppliedJobs(jobIds);
+      }
+    } catch (error) {
+      console.error("Error fetching applications:", error);
+    }
+  };
+
   const handleDeleteJob = async (jobId: string) => {
     if (!confirm("Are you sure you want to delete this job?")) return;
 
     try {
-      const response = await fetch(`/api/jobs/${jobId}`, {
-        method: "DELETE",
-      });
-
-      const data = await response.json();
+      const { data } = await axios.delete(`/api/jobs/${jobId}`);
       if (data.success) {
         setJobs(jobs.filter(job => job._id !== jobId));
       } else {
@@ -87,6 +102,36 @@ export default function JobsList() {
       setError("Error deleting job");
       console.error("Error deleting job:", error);
     }
+  };
+
+  const handleApply = async (jobId: string) => {
+    if (!isStudent) return;
+
+    setApplying(jobId);
+    setError("");
+
+    try {
+      const { data } = await axios.post(`/api/jobs/${jobId}/apply`);
+
+      if (data.success) {
+        setAppliedJobs(prev => [...prev, jobId]);
+        // Optionally show success message
+      } else {
+        setError(data.message || "Failed to apply");
+      }
+    } catch (error: any) {
+      setError(error.response?.data?.message || "Error applying to job");
+      console.error("Error applying to job:", error);
+    } finally {
+      setApplying(null);
+    }
+  };
+
+  const canApply = (job: Job) => {
+    if (!isStudent) return false;
+    if (appliedJobs.includes(job._id)) return false;
+    if (isExpired(job.lastDateToApply)) return false;
+    return true;
   };
 
   const filteredJobs = jobs.filter(job => {
@@ -230,6 +275,12 @@ export default function JobsList() {
                         Expired
                       </span>
                     )}
+                    {appliedJobs.includes(job._id) && (
+                      <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3" />
+                        Applied
+                      </span>
+                    )}
                   </div>
                   
                   <Link
@@ -268,6 +319,30 @@ export default function JobsList() {
                       Eligible: <span className="font-medium">{job.eligibleBranches.join(", ")}</span>
                     </span>
                   </div>
+
+                  {/* Apply Button for Students */}
+                  {isStudent && (
+                    <div className="mt-4">
+                      {appliedJobs.includes(job._id) ? (
+                        <div className="flex items-center space-x-2 text-green-600">
+                          <CheckCircle className="h-4 w-4" />
+                          <span className="text-sm font-medium">Already Applied</span>
+                        </div>
+                      ) : isExpired(job.lastDateToApply) ? (
+                        <div className="px-4 py-2 bg-gray-100 text-gray-500 rounded-lg text-sm">
+                          Application Closed
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleApply(job._id)}
+                          disabled={applying === job._id}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                        >
+                          {applying === job._id ? "Applying..." : "Apply Now"}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
                 
                 {isAdmin && (

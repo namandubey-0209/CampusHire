@@ -4,6 +4,7 @@ import dbConnect from "@/lib/dbConnect";
 import Application from "@/model/Application";
 import mongoose from "mongoose";
 import StudentProfile from "@/model/StudentProfile";
+import axios from "axios";
 
 export async function POST(
   req: Request,
@@ -22,7 +23,7 @@ export async function POST(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     const studentProfile = await StudentProfile.findOne({
       userId: new mongoose.Types.ObjectId(user._id),
@@ -54,8 +55,14 @@ export async function POST(
       appliedAt: new Date(),
     });
 
-    return Response.json({ success: true, application }, { status: 201 });
+    await axios.post(`${process.env.NEXTAUTH_URL}/api/notifications`, {
+      recipientId: user._id,
+      type: "job_applied",
+      message: "Your application has been submitted successfully!",
+      isRead: false,
+    });
 
+    return Response.json({ success: true, application }, { status: 201 });
   } catch (error) {
     console.error("Error applying to job:", error);
     return Response.json(

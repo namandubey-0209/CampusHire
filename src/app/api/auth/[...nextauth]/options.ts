@@ -10,18 +10,15 @@ export const authOptions: NextAuthOptions = {
       id: "credentials",
       name: "Credentials",
       credentials: {
-        identifier: { label: "Email or Username", type: "text" },
+        identifier: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials: any): Promise<any> {
         try {
           await dbConnect();
-          const user = await User.findOne({
-            $or: [
+          const user = await User.findOne(
               { email: credentials.identifier },
-              { username: credentials.identifier },
-            ],
-          });
+          );
 
           if (!user) {
             throw new Error("Invalid credentials"); 

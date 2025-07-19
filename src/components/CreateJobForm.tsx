@@ -1,8 +1,8 @@
-// components/CreateJobForm.tsx
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Save, Building2 } from "lucide-react";
+import axios from "axios";
+import { ArrowLeft, Save, Building2, Plus } from "lucide-react";
 import Link from "next/link";
 
 interface Company {
@@ -15,10 +15,13 @@ export default function CreateJobForm() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [formData, setFormData] = useState({
+  const [step, setStep] = useState<"company" | "job">("company");
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [showCreateCompany, setShowCreateCompany] = useState(false);
+
+  // Job form data
+  const [jobForm, setJobForm] = useState({
     title: "",
-    companyName: "",
-    companyId: "",
     description: "",
     location: "",
     mode: "",
@@ -27,10 +30,19 @@ export default function CreateJobForm() {
     lastDateToApply: "",
   });
 
+  // Company form data
+  const [companyForm, setCompanyForm] = useState({
+    name: "",
+    description: "",
+    website: "",
+    location: "",
+    logoUrl: "",
+  });
+
   const branches = [
     "Computer Science",
     "Electronics",
-    "Mechanical",
+    "Mechanical", 
     "Civil",
     "Electrical",
     "Information Technology",
@@ -50,8 +62,7 @@ export default function CreateJobForm() {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch("/api/company");
-      const data = await response.json();
+      const { data } = await axios.get("/api/companies");
       if (data.success) {
         setCompanies(data.companies);
       }
@@ -60,25 +71,18 @@ export default function CreateJobForm() {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleJobInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setJobForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleCompanyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedCompany = companies.find(company => company._id === e.target.value);
-    setFormData(prev => ({
-      ...prev,
-      companyId: e.target.value,
-      companyName: selectedCompany?.name || ""
-    }));
+  const handleCompanyInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setCompanyForm(prev => ({ ...prev, [name]: value }));
   };
 
   const handleBranchChange = (branch: string) => {
-    setFormData(prev => ({
+    setJobForm(prev => ({
       ...prev,
       eligibleBranches: prev.eligibleBranches.includes(branch)
         ? prev.eligibleBranches.filter(b => b !== branch)
@@ -86,12 +90,47 @@ export default function CreateJobForm() {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.title || !formData.companyId || !formData.description || 
-        !formData.location || !formData.mode || !formData.minCGPA || 
-        formData.eligibleBranches.length === 0 || !formData.lastDateToApply) {
+  const createNewCompany = async () => {
+    if (!companyForm.name || !companyForm.description) {
+      setError("Company name and description are required");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { data } = await axios.post("/api/companies", companyForm);
+      
+      if (data.success) {
+        const newCompany = { _id: data.company._id, name: data.company.name };
+        setSelectedCompany(newCompany);
+        setCompanies(prev => [...prev, newCompany]);
+        setShowCreateCompany(false);
+        setStep("job");
+        setError("");
+      } else {
+        setError(data.message || "Failed to create company");
+      }
+    } catch (error) {
+      setError("Error creating company");
+      console.error("Error creating company:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const selectExistingCompany = (company: Company) => {
+    setSelectedCompany(company);
+    setStep("job");
+  };
+
+  const submitJob = async () => {
+    if (!selectedCompany) {
+      setError("Please select or create a company first");
+      return;
+    }
+
+    if (!jobForm.title || !jobForm.description || !jobForm.location || !jobForm.mode || 
+        !jobForm.minCGPA || jobForm.eligibleBranches.length === 0 || !jobForm.lastDateToApply) {
       setError("Please fill in all required fields");
       return;
     }
@@ -100,18 +139,12 @@ export default function CreateJobForm() {
     setError("");
 
     try {
-      const response = await fetch("/api/jobs", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...formData,
-          minCGPA: parseFloat(formData.minCGPA),
-        }),
+      const { data } = await axios.post("/api/jobs", {
+        ...jobForm,
+        companyId: selectedCompany._id,
+        companyName: selectedCompany.name,
+        minCGPA: parseFloat(jobForm.minCGPA),
       });
-
-      const data = await response.json();
 
       if (data.success) {
         router.push("/jobs");
@@ -139,196 +172,305 @@ export default function CreateJobForm() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Post New Job</h1>
-            <p className="text-gray-600">Create a new job posting</p>
+            <p className="text-gray-600">
+              {step === "company" ? "First, select or create a company" : `Creating job for ${selectedCompany?.name}`}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Form */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-800">{error}</p>
-            </div>
-          )}
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p className="text-red-800">{error}</p>
+        </div>
+      )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Job Title */}
-            <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                Job Title *
-              </label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., Software Engineer Intern"
-                required
-              />
-            </div>
-
-            {/* Company */}
-            <div>
-              <label htmlFor="companyId" className="block text-sm font-medium text-gray-700 mb-2">
-                Company *
-              </label>
-              <select
-                id="companyId"
-                name="companyId"
-                value={formData.companyId}
-                onChange={handleCompanyChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              >
-                <option value="">Select a company</option>
-                {companies.map(company => (
-                  <option key={company._id} value={company._id}>
-                    {company.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Location */}
-            <div>
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
-                Location *
-              </label>
-              <input
-                type="text"
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., Bangalore, India"
-                required
-              />
-            </div>
-
-            {/* Work Mode */}
-            <div>
-              <label htmlFor="mode" className="block text-sm font-medium text-gray-700 mb-2">
-                Work Mode *
-              </label>
-              <select
-                id="mode"
-                name="mode"
-                value={formData.mode}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              >
-                <option value="">Select work mode</option>
-                {modes.map(mode => (
-                  <option key={mode.value} value={mode.value}>
-                    {mode.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Min CGPA */}
-            <div>
-              <label htmlFor="minCGPA" className="block text-sm font-medium text-gray-700 mb-2">
-                Minimum CGPA *
-              </label>
-              <input
-                type="number"
-                id="minCGPA"
-                name="minCGPA"
-                value={formData.minCGPA}
-                onChange={handleInputChange}
-                step="0.1"
-                min="0"
-                max="10"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., 7.5"
-                required
-              />
-            </div>
-
-            {/* Application Deadline */}
-            <div>
-              <label htmlFor="lastDateToApply" className="block text-sm font-medium text-gray-700 mb-2">
-                Application Deadline *
-              </label>
-              <input
-                type="date"
-                id="lastDateToApply"
-                name="lastDateToApply"
-                value={formData.lastDateToApply}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Job Description */}
+      {/* Step 1: Company Selection/Creation */}
+      {step === "company" && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-              Job Description *
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              rows={6}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Describe the job responsibilities, requirements, and benefits..."
-              required
-            />
-          </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Select Company</h2>
+            
+            {!showCreateCompany ? (
+              <div className="space-y-4">
+                {/* Existing Companies */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {companies.map(company => (
+                    <div
+                      key={company._id}
+                      onClick={() => selectExistingCompany(company)}
+                      className="p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Building2 className="h-8 w-8 text-gray-400" />
+                        <span className="font-medium text-gray-900">{company.name}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-          {/* Eligible Branches */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Eligible Branches *
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {branches.map(branch => (
-                <label key={branch} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.eligibleBranches.includes(branch)}
-                    onChange={() => handleBranchChange(branch)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                {/* Add New Company Button */}
+                <div className="text-center pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => setShowCreateCompany(true)}
+                    className="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <Plus className="h-5 w-5" />
+                    <span>Add New Company</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* New Company Form */
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-gray-900">Create New Company</h3>
+                  <button
+                    onClick={() => setShowCreateCompany(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    Cancel
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Company Name *
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={companyForm.name}
+                      onChange={handleCompanyInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter company name"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Website
+                    </label>
+                    <input
+                      type="url"
+                      name="website"
+                      value={companyForm.website}
+                      onChange={handleCompanyInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="https://company.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Location
+                    </label>
+                    <input
+                      type="text"
+                      name="location"
+                      value={companyForm.location}
+                      onChange={handleCompanyInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Company location"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Logo URL
+                    </label>
+                    <input
+                      type="url"
+                      name="logoUrl"
+                      value={companyForm.logoUrl}
+                      onChange={handleCompanyInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="https://company.com/logo.png"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description *
+                  </label>
+                  <textarea
+                    name="description"
+                    value={companyForm.description}
+                    onChange={handleCompanyInputChange}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Describe the company..."
                   />
-                  <span className="text-sm text-gray-700">{branch}</span>
-                </label>
-              ))}
-            </div>
+                </div>
+
+                <button
+                  onClick={createNewCompany}
+                  disabled={loading}
+                  className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+                >
+                  {loading ? "Creating Company..." : "Create Company & Continue"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: Job Creation Form */}
+      {step === "job" && selectedCompany && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-gray-900">Job Details</h2>
+            <p className="text-gray-600">Company: {selectedCompany.name}</p>
           </div>
 
-          {/* Submit Button */}
-          <div className="flex justify-end space-x-4">
-            <Link
-              href="/jobs"
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </Link>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
-            >
-              {loading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              <span>{loading ? "Creating..." : "Create Job"}</span>
-            </button>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Job Title */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Job Title *
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  value={jobForm.title}
+                  onChange={handleJobInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Software Engineer Intern"
+                />
+              </div>
+
+              {/* Location */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Location *
+                </label>
+                <input
+                  type="text"
+                  name="location"
+                  value={jobForm.location}
+                  onChange={handleJobInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Bangalore, India"
+                />
+              </div>
+
+              {/* Work Mode */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Work Mode *
+                </label>
+                <select
+                  name="mode"
+                  value={jobForm.mode}
+                  onChange={handleJobInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select work mode</option>
+                  {modes.map(mode => (
+                    <option key={mode.value} value={mode.value}>
+                      {mode.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Min CGPA */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Minimum CGPA *
+                </label>
+                <input
+                  type="number"
+                  name="minCGPA"
+                  value={jobForm.minCGPA}
+                  onChange={handleJobInputChange}
+                  step="0.1"
+                  min="0"
+                  max="10"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., 7.5"
+                />
+              </div>
+
+              {/* Application Deadline */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Application Deadline *
+                </label>
+                <input
+                  type="date"
+                  name="lastDateToApply"
+                  value={jobForm.lastDateToApply}
+                  onChange={handleJobInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Job Description */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Job Description *
+              </label>
+              <textarea
+                name="description"
+                value={jobForm.description}
+                onChange={handleJobInputChange}
+                rows={6}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Describe the job responsibilities, requirements, and benefits..."
+              />
+            </div>
+
+            {/* Eligible Branches */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Eligible Branches *
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {branches.map(branch => (
+                  <label key={branch} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={jobForm.eligibleBranches.includes(branch)}
+                      onChange={() => handleBranchChange(branch)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{branch}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Submit Buttons */}
+            <div className="flex justify-between pt-6 border-t border-gray-200">
+              <button
+                onClick={() => setStep("company")}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                ← Back to Company
+              </button>
+              <button
+                onClick={submitJob}
+                disabled={loading}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center space-x-2"
+              >
+                {loading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                <span>{loading ? "Creating..." : "Create Job"}</span>
+              </button>
+            </div>
           </div>
-        </form>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -37,7 +37,7 @@ export default function SignInPage() {
     setLoading(true);
 
     const res = await signIn('credentials', {
-      email,
+      identifier: email,
       password,
       redirect: false,
     });

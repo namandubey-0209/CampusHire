@@ -2,7 +2,7 @@ import dbConnect from "@/lib/dbConnect";
 import { getServerSession, User } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/options";
 import CompanyProfile from "@/model/CompanyProfile";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
     req: NextRequest,
@@ -44,4 +44,27 @@ export async function GET(
             { status: 500 }
         );
     }
+}
+
+export async function DELETE(
+  req: Request, 
+  { params }: { params: Promise<{ companyId: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || session.user.role !== "admin") {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    }
+
+    await dbConnect();
+    const { companyId } = await params;
+
+    await CompanyProfile.findByIdAndDelete(companyId);
+
+    return NextResponse.json({ success: true, message: "Company deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting company:", error);
+    return NextResponse.json({ success: false, message: "Failed to delete company" }, { status: 500 });
+  }
 }

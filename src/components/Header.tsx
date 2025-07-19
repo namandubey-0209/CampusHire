@@ -1,5 +1,6 @@
 // src/components/Header.tsx
 "use client";
+import React, { useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { Bell, User, LogOut, Briefcase, Building2 } from "lucide-react";
@@ -10,6 +11,18 @@ export default function Header() {
   const isStudent = session?.user?.role === "student";
   const isAdmin = session?.user?.role === "admin";
   const [open, setOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/notifications")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          const unread = data.notifications.filter((n: any) => !n.isRead).length;
+          setUnreadCount(unread);
+        }
+      });
+  }, []);
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
@@ -69,9 +82,14 @@ export default function Header() {
           {/* Notifications - visible to both roles */}
           <Link
             href="/notifications"
-            className="text-gray-500 hover:text-gray-700"
+            className="relative text-gray-500 hover:text-gray-700"
           >
             <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
           </Link>
 
           {/* Profile dropdown */}

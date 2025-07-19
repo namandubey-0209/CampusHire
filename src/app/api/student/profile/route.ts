@@ -28,7 +28,11 @@ export async function GET(req: Request) {
     }
 
     return Response.json(
-      { success: true, message: "Fetched student profile", studentProfile },
+      {
+        success: true,
+        message: "Fetched student profile",
+        profile: studentProfile,
+      },
       { status: 200 }
     );
   } catch (error) {
@@ -54,41 +58,40 @@ export async function POST(req: Request) {
       );
     }
 
-    const { enrollmentNo, branch, year, cgpa, resumeLink, skills, isPlaced } =
+    const { email, enrollmentNo, branch, year, cgpa, resumeUrl, skills } =
       await req.json();
     const userId = new Types.ObjectId(user._id);
 
-    if (
-      !enrollmentNo ||
-      !branch ||
-      !year ||
-      !cgpa ||
-      !resumeLink ||
-      !skills ||
-      !isPlaced
-    ) {
+    console.log("email, enrollmentNo, branch, year, cgpa, resumeLink, skills", {
+      email,
+      enrollmentNo,
+      branch,
+      year,
+      cgpa,
+      resumeUrl,
+      skills,
+    });
+
+    if (!enrollmentNo || !branch || !year || !cgpa || !resumeUrl || !skills) {
       return NextResponse.json(
         { success: false, message: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    const studentProfile = await StudentProfile.create({
+    const profile = await StudentProfile.create({
       userId,
+      email,
       enrollmentNo,
       branch,
       year,
       cgpa,
-      resumeLink,
+      resumeUrl,
       skills,
-      isPlaced
+      isPlaced: false,
     });
 
-    return Response.json(
-      { success: true, message: "Student Profile created", studentProfile },
-      { status: 200 }
-    );
-
+    return NextResponse.json({ success: true, profile }, { status: 200 });
   } catch (error) {
     console.error("Student profile creation error", error);
     return Response.json(
@@ -112,8 +115,8 @@ export async function PUT(req: Request) {
       );
     }
 
-    const existingProfile = await StudentProfile.findOne({ userId: user._id });
-    if (!existingProfile) {
+    const existing = await StudentProfile.findOne({ userId: user._id });
+    if (!existing) {
       return Response.json(
         { success: false, message: "Student profile not found" },
         { status: 404 }
@@ -121,19 +124,17 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json();
+    existing.enrollmentNo = body.enrollmentNo ?? existing.enrollmentNo;
+    existing.branch = body.branch ?? existing.branch;
+    existing.year = body.year ?? existing.year;
+    existing.cgpa = body.cgpa ?? existing.cgpa;
+    existing.resumeUrl = body.resumeUrl ?? existing.resumeUrl; 
+    existing.skills = body.skills ?? existing.skills;
+    existing.isPlaced = body.isPlaced ?? existing.isPlaced;
+    await existing.save();
 
-    existingProfile.enrollmentNo = body.enrollmentNo ?? existingProfile.enrollmentNo;
-    existingProfile.branch = body.branch ?? existingProfile.branch;
-    existingProfile.year = body.year ?? existingProfile.year;
-    existingProfile.cgpa = body.cgpa ?? existingProfile.cgpa;
-    existingProfile.resumeLink = body.resumeLink ?? existingProfile.resumeLink;
-    existingProfile.skills = body.skills ?? existingProfile.skills;
-    existingProfile.isPlaced = body.isPlaced ?? existingProfile.isPlaced;
-
-    await existingProfile.save();
-
-    return Response.json(
-      { success: true, message: "Student profile updated", studentProfile: existingProfile },
+    return NextResponse.json(
+      { success: true, profile: existing },
       { status: 200 }
     );
   } catch (error) {
@@ -144,4 +145,3 @@ export async function PUT(req: Request) {
     );
   }
 }
-
