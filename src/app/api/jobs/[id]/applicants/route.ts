@@ -5,7 +5,6 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/dbConnect";
 import Job from "@/model/Job";
 import Application from "@/model/Application";
-import Notification from "@/model/Notification";
 
 export async function GET(
   request: NextRequest,
@@ -32,27 +31,6 @@ export async function GET(
       select: "userId status",
       populate: { path: "userId", select: "name _id" }
     });
-
-  await Promise.all(applicants.map(async app => {
-    // Determine message based on status
-    const userId = (app.studentId.userId as any)._id;
-    let message: string;
-    if (app.status === "shortlisted") {
-      message = `Congratulations! You have been shortlisted for “${job.title}.”`;
-    } else if (app.status === "rejected") {
-      message = `We’re sorry—your application for “${job.title}” was not selected.`;
-    } else {
-      // Skip or send neutral info for other statuses
-      return;
-    }
-    await Notification.create({
-      recipientId: userId,
-      type: "status_update",
-      message,
-      link: `/applications/${app._id}`, 
-      isRead: false
-    });
-  }));
 
   return NextResponse.json({ success: true, applicants }, { status: 200 });
 }

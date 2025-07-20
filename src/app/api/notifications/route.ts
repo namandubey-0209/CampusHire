@@ -18,17 +18,14 @@ export async function GET() {
       );
     }
 
-    const notifications = await Notification.find({ recipientId: user._id })
-      .sort({ createdAt: -1 });
-      
-    if (!notifications) {
-      return Response.json(
-        { success: false, message: "No notifications found" },
-        { status: 404 }
-      );
-    }
+    const notifications = await Notification.find({
+      recipientId: user._id,
+    }).sort({ createdAt: -1 });
 
-    return Response.json({ success: true, notifications }, { status: 200 });
+    return Response.json(
+      { success: true, notifications: notifications || [] },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error fetching notifications:", error);
     return Response.json(
@@ -39,14 +36,26 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { recipientId, type, message, isRead = false } = await req.json();
-
-  const notification = await Notification.create({
-    recipientId,
-    type,
-    message,
-    isRead,
-  });
-
-  return NextResponse.json({ success: true, notification });
+  try {
+    const { recipientId, type, message, isRead = false } = await req.json();
+    const notification = await Notification.create({
+      recipientId,
+      type,
+      message,
+      isRead,
+    });
+    return NextResponse.json({ success: true, notification });
+  } catch (error: any) {
+    if (error.code === 11000) {
+      return NextResponse.json({
+        success: true,
+        message: "Duplicate notification prevented",
+      });
+    }
+    console.error("Error creating notification:", error);
+    return NextResponse.json(
+      { success: false, message: "Error creating notification" },
+      { status: 500 }
+    );
+  }
 }

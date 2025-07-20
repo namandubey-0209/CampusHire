@@ -27,7 +27,7 @@ export async function GET(
         const studentProfile = await StudentProfile.findOne({ userId: id });
         if (!studentProfile) {
             return Response.json(
-                { success: false, message: "Student profile not found" },
+                { success: false, message: "Student has not created a profile yet." },
                 { status: 404 }
             );
         }

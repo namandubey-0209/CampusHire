@@ -65,29 +65,40 @@ export default function StudentProfile({ userId: studentId, editable }: Props) {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get<{
-        success: boolean;
-        student: any;
-      }>(`/api/admin/students/${studentId}`);
+      let data;
+      if (isAdmin) {
+        ({ data } = await axios.get<{
+          success: boolean;
+          student: any;
+        }>(`/api/admin/students/${studentId}`));
+      } else {
+        ({ data } = await axios.get<{
+          success: boolean;
+          student: Profile;
+        }>(`/api/student/profile`));
+      }
 
       if (data.success && data.student) {
+        const src = data.student;
         const mappedProfile: Profile = {
-          name: data.student.name || "",
-          email: data.student.email || "",
-          enrollmentNo: data.student.enrollmentNo,
-          branch: data.student.branch,
-          year: data.student.year,
-          cgpa: data.student.cgpa,
-          resumeUrl: data.student.resumeUrl,
-          skills: data.student.skills || [],
-          isPlaced: data.student.isPlaced || false,
+          name: src.name || "",
+          email: src.email || "",
+          enrollmentNo: src.enrollmentNo,
+          branch: src.branch,
+          year: src.year,
+          cgpa: src.cgpa,
+          resumeUrl: src.resumeUrl,
+          skills: src.skills || [],
+          isPlaced: src.isPlaced || false,
         };
 
         setProfile(mappedProfile);
         setForm(mappedProfile);
+      } else if (!data.success) {
+        setError("Student has not created a profile yet.");
       }
-    } catch (error) {
-      console.error("Error fetching profile:", error);
+    } catch (err) {
+      console.error("Error fetching profile:", err);
       setError("Failed to load student profile");
     } finally {
       setLoading(false);
@@ -377,7 +388,9 @@ export default function StudentProfile({ userId: studentId, editable }: Props) {
               placeholder="Enter full name"
             />
           ) : (
-            <p className="text-gray-900">{profile?.name}</p>
+            <p className="text-gray-900">
+              {profile?.name || session?.user?.name}
+            </p>
           )}
         </div>
 
@@ -592,6 +605,7 @@ export default function StudentProfile({ userId: studentId, editable }: Props) {
       )}
 
       {/* Profile Completion */}
+      {/* Profile Completion */}
       {editable && !isAdmin && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h3 className="text-sm font-medium text-blue-800 mb-2">
@@ -603,30 +617,28 @@ export default function StudentProfile({ userId: studentId, editable }: Props) {
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                 style={{
                   width: `${
-                    ((profile?.name ? 1 : 0) +
-                      (profile?.email ? 1 : 0) +
+                    ((profile?.email ? 1 : 0) +
                       (profile?.enrollmentNo ? 1 : 0) +
                       (profile?.branch ? 1 : 0) +
                       (profile?.year ? 1 : 0) +
                       (profile?.cgpa ? 1 : 0) +
                       (profile?.resumeUrl ? 1 : 0) +
                       (profile?.skills && profile.skills.length > 0 ? 1 : 0)) *
-                    12.5
+                    14.28
                   }%`,
                 }}
               ></div>
             </div>
             <span className="text-sm text-blue-800 font-medium">
               {Math.round(
-                ((profile?.name ? 1 : 0) +
-                  (profile?.email ? 1 : 0) +
+                ((profile?.email ? 1 : 0) +
                   (profile?.enrollmentNo ? 1 : 0) +
                   (profile?.branch ? 1 : 0) +
                   (profile?.year ? 1 : 0) +
                   (profile?.cgpa ? 1 : 0) +
                   (profile?.resumeUrl ? 1 : 0) +
                   (profile?.skills && profile.skills.length > 0 ? 1 : 0)) *
-                  12.5
+                  14.28
               )}
               % Complete
             </span>

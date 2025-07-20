@@ -3,6 +3,7 @@ import { getServerSession, User } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/options";
 import CompanyProfile from "@/model/CompanyProfile";
 import { NextRequest, NextResponse } from "next/server";
+import Job from "@/model/Job";
 
 export async function GET(
     req: NextRequest,
@@ -48,7 +49,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   await dbConnect();
 
@@ -72,7 +73,8 @@ export async function PATCH(
       );
     }
 
-    // Update only provided fields
+    const oldName = existingCompany.name;
+
     existingCompany.name        = body.name        ?? existingCompany.name;
     existingCompany.description = body.description ?? existingCompany.description;
     existingCompany.website     = body.website     ?? existingCompany.website;
@@ -80,6 +82,13 @@ export async function PATCH(
     existingCompany.logoUrl     = body.logoUrl     ?? existingCompany.logoUrl;
 
     await existingCompany.save();
+
+    if (body.name && body.name !== oldName) {
+      await Job.updateMany(
+        { companyId: existingCompany._id },
+        { $set: { companyName: existingCompany.name } }
+      );
+    }
 
     return NextResponse.json(
       { success: true, company: existingCompany },
@@ -98,20 +107,25 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  await dbConnect();
+
   try {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== "admin") {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
-    await dbConnect();
-
     const { id } = await params;
+
+    await Job.deleteMany({ companyId: id });
 
     await CompanyProfile.findByIdAndDelete(id);
 
     return NextResponse.json(
-      { success: true, message: "Company deleted successfully" },
+      { success: true, message: "Company and its jobs deleted successfully" },
       { status: 200 }
     );
   } catch (error) {

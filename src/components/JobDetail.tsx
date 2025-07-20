@@ -95,8 +95,7 @@ export default function JobDetail({ jobId }: JobDetailProps) {
       day: "numeric",
     });
 
-  const isExpired = (dateString: string) =>
-    new Date(dateString) < new Date();
+  const isExpired = (dateString: string) => new Date(dateString) < new Date();
 
   const handleApply = async () => {
     if (!isStudent || !job) return;
@@ -118,8 +117,19 @@ export default function JobDetail({ jobId }: JobDetailProps) {
       } else {
         setError(data.message || "Failed to apply");
       }
-    } catch (err) {
-      setError("Error applying to job");
+    } catch (err: unknown) {
+      // Type-safe error handling for axios errors
+      if (axios.isAxiosError(err)) {
+        // err is now properly typed as AxiosError
+        if (err.response && err.response.data) {
+          setError(err.response.data.message || "Failed to apply");
+        } else {
+          setError("Failed to apply");
+        }
+      } else {
+        // Handle non-axios errors
+        setError("Error applying to job");
+      }
       console.error(err);
     } finally {
       setApplying(false);

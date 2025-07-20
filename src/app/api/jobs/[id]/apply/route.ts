@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/dbConnect";
 import Application from "@/model/Application";
-import Job from "@/model/Job";          // import your Job model
+import Job from "@/model/Job"; // import your Job model
 import mongoose from "mongoose";
 import StudentProfile from "@/model/StudentProfile";
 import axios from "axios";
@@ -24,9 +24,8 @@ export async function POST(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
 
-    // find student profile
     const studentProfile = await StudentProfile.findOne({
       userId: new mongoose.Types.ObjectId(user._id),
     });
@@ -38,7 +37,6 @@ export async function POST(
       );
     }
 
-    // prevent duplicate applications
     const alreadyApplied = await Application.findOne({
       jobId: id,
       studentId: studentProfile._id,
@@ -51,17 +49,34 @@ export async function POST(
       );
     }
 
+    const job = await Job.findById(id);
+
+    if(studentProfile.isPlaced) {
+      return Response.json(
+        { success: false, message: "You are already placed" },
+        { status: 403 }
+      );
+    }
+
+    if (
+      studentProfile.cgpa < job.minCGPA ||
+      !job.eligibleBranches.includes(studentProfile.branch)
+    ) {
+      return Response.json(
+        {
+          success: false,
+          message: "Your profile does not meet the job requirements",
+        },
+        { status: 400 }
+      );
+    }
+
     // create the application
     const application = await Application.create({
       jobId: id,
       studentId: studentProfile._id,
       status: "applied",
       appliedAt: new Date(),
-    });
-
-    // update the job's lastDateToApply to now
-    await Job.findByIdAndUpdate(id, {
-      lastDateToApply: new Date(),
     });
 
     // send notification

@@ -17,8 +17,9 @@ export async function GET() {
     }
 
     const studentProfile = await StudentProfile.findOne({ userId: user._id });
+
     if (!studentProfile) {
-      return Response.json({ success: false, message: "Student profile not found" }, { status: 404 });
+      return Response.json({ success: true, message: "Student profile not found", applications: [] }, { status: 200 });
     }
 
     const applications = await Application.find({ studentId: studentProfile._id })

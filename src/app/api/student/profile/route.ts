@@ -22,7 +22,7 @@ export async function GET(req: Request) {
     const studentProfile = await StudentProfile.findOne({ userId: user._id });
     if (!studentProfile) {
       return Response.json(
-        { success: false, message: "Student profile not found" },
+        { success: false, message: "Student has not created a profile yet." },
         { status: 404 }
       );
     }
@@ -31,7 +31,7 @@ export async function GET(req: Request) {
       {
         success: true,
         message: "Fetched student profile",
-        profile: studentProfile,
+        student: studentProfile,
       },
       { status: 200 }
     );
