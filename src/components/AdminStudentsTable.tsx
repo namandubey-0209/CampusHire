@@ -1,6 +1,7 @@
 // src/components/AdminStudentsTable.tsx
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 
 interface Student {
@@ -21,6 +22,7 @@ export default function AdminStudentsTable() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
     axios.get<{ success: boolean; students: Student[] }>("/api/students")
@@ -31,6 +33,10 @@ export default function AdminStudentsTable() {
       .catch(() => setError("Error loading students"))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleStudentClick = (studentId: string) => {
+    router.push(`/admin/student/${studentId}`);
+  };
 
   if (loading) {
     return <div className="text-center py-20">Loading…</div>;
@@ -57,7 +63,11 @@ export default function AdminStudentsTable() {
         </thead>
         <tbody>
           {students.map(s => (
-            <tr key={s._id} className="border-t">
+            <tr 
+              key={s._id} 
+              className="border-t hover:bg-gray-50 cursor-pointer transition-colors"
+              onClick={() => handleStudentClick(s._id)}
+            >
               <td className="px-4 py-2 text-sm">{s.name}</td>
               <td className="px-4 py-2 text-sm">{s.email}</td>
               <td className="px-4 py-2 text-sm">{s.enrollmentNo}</td>

@@ -231,7 +231,7 @@ export default function JobApplicants({ jobId }: { jobId: string }) {
                   )}
                   
                   <Link
-                    href={`/student/${app.studentId._id}`}
+                    href={`/admin/student/${app.studentId._id}`}
                     className="text-blue-600 hover:text-blue-700 p-2 rounded-lg hover:bg-blue-50 transition-colors flex items-center"
                     title="View Student Profile"
                   >

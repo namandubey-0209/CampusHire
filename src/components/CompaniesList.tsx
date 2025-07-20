@@ -18,8 +18,9 @@ export default function CompaniesList() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get<{ success: boolean; companies: Company[] }>("/api/companies")
-      .then(res => {
+    axios
+      .get<{ success: boolean; companies: Company[] }>("/api/companies")
+      .then((res) => {
         if (res.data.success) setCompanies(res.data.companies);
       })
       .catch(console.error)
@@ -41,24 +42,38 @@ export default function CompaniesList() {
       {companies.length === 0 ? (
         <div className="text-center py-12">
           <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No companies found</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            No companies found
+          </h3>
           <p className="text-gray-600">
             No companies have been added to the platform yet.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {companies.map(c => (
+          {companies.map((c) => (
             <Link
               key={c._id}
               href={`/company/${c._id}`}
               className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-sm transition-shadow flex flex-col"
             >
               {c.logoUrl ? (
-                <img src={c.logoUrl} alt={c.name} className="h-12 w-12 object-contain mb-4" />
-              ) : (
-                <Building2 className="h-12 w-12 text-gray-400 mb-4" />
-              )}
+                <img
+                  src={c.logoUrl}
+                  alt={c.name}
+                  className="h-12 w-12 object-contain mb-4"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                    const fallbackDiv = e.currentTarget
+                      .nextElementSibling as HTMLElement;
+                    if (fallbackDiv) fallbackDiv.style.display = "block";
+                  }}
+                />
+              ) : null}
+              <Building2
+                className="h-12 w-12 text-gray-400 mb-4"
+                style={{ display: c.logoUrl ? "none" : "block" }}
+              />
               <h2 className="text-lg font-semibold text-gray-900">{c.name}</h2>
               <p className="text-gray-600 mt-2 line-clamp-3">{c.description}</p>
             </Link>

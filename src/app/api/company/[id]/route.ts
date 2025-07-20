@@ -95,24 +95,30 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  req: Request, 
-  { params }: { params: Promise<{ companyId: string }> }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
     if (!session || session.user.role !== "admin") {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
     await dbConnect();
-    const { companyId } = await params;
 
-    await CompanyProfile.findByIdAndDelete(companyId);
+    const { id } = await params;
 
-    return NextResponse.json({ success: true, message: "Company deleted successfully" });
+    await CompanyProfile.findByIdAndDelete(id);
+
+    return NextResponse.json(
+      { success: true, message: "Company deleted successfully" },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error deleting company:", error);
-    return NextResponse.json({ success: false, message: "Failed to delete company" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: "Failed to delete company" },
+      { status: 500 }
+    );
   }
 }

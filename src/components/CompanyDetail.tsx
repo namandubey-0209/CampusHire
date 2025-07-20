@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { Trash2 } from "lucide-react";
 import { Building2, Globe, MapPin, Edit, Save } from "lucide-react";
 
 interface Job {
@@ -29,15 +30,43 @@ export default function CompanyDetail({ companyId }: { companyId: string }) {
   const [form, setForm] = useState<Partial<Company>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [deleting, setDeleting] = useState(false);
   const router = useRouter();
+
+  const handleDeleteCompany = async () => {
+    if (!confirm("Are you sure you want to delete this company?")) return;
+    setDeleting(true);
+    setError("");
+    try {
+      console.log("Deleting company with ID:", companyId);
+      const { data } = await axios.delete<{
+        success: boolean;
+        message?: string;
+      }>(`/api/company/${companyId}`);
+      if (data.success) {
+        router.push("/admin/companies");
+      } else {
+        setError(data.message || "Failed to delete company");
+      }
+    } catch (err) {
+      console.error("Error deleting company:", err);
+      setError("Error deleting company");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
         const [cRes, jRes] = await Promise.all([
-          axios.get<{ success: boolean; companyProfile: Company }>(`/api/company/${companyId}`),
-          axios.get<{ success: boolean; jobs: Job[] }>(`/api/company/${companyId}/jobs`)
+          axios.get<{ success: boolean; companyProfile: Company }>(
+            `/api/company/${companyId}`
+          ),
+          axios.get<{ success: boolean; jobs: Job[] }>(
+            `/api/company/${companyId}/jobs`
+          ),
         ]);
 
         if (cRes.data.success) {
@@ -56,18 +85,21 @@ export default function CompanyDetail({ companyId }: { companyId: string }) {
     })();
   }, [companyId]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSave = async () => {
     setSaving(true);
     setError("");
     try {
-      const { data } = await axios.patch<{ success: boolean; company: Company; message?: string }>(
-        `/api/company/${companyId}`,
-        form
-      );
+      const { data } = await axios.patch<{
+        success: boolean;
+        company: Company;
+        message?: string;
+      }>(`/api/company/${companyId}`, form);
       if (data.success) {
         setCompany(data.company);
         setEditMode(false);
@@ -117,7 +149,11 @@ export default function CompanyDetail({ companyId }: { companyId: string }) {
       // Fallback if URL is invalid
       return (
         <a
-          href={company.website.startsWith("http") ? company.website : `https://${company.website}`}
+          href={
+            company.website.startsWith("http")
+              ? company.website
+              : `https://${company.website}`
+          }
           target="_blank"
           rel="noopener noreferrer"
           className="text-blue-600 hover:underline"
@@ -139,9 +175,24 @@ export default function CompanyDetail({ companyId }: { companyId: string }) {
                 Logo upload not implemented
               </div>
             ) : company.logoUrl ? (
-              <img src={company.logoUrl} alt={company.name} className="h-20 w-20 object-contain rounded-lg" />
-            ) : (
-              <Building2 className="h-20 w-20 text-gray-400" />
+              <img
+                src={company.logoUrl}
+                alt={company.name}
+                className="h-20 w-20 object-contain rounded-lg"
+                onError={(e) => {
+                  // Hide the img element and show the Building2 icon instead
+                  e.currentTarget.style.display = "none";
+                  const fallbackDiv = e.currentTarget
+                    .nextElementSibling as HTMLElement;
+                  if (fallbackDiv) fallbackDiv.style.display = "flex";
+                }}
+              />
+            ) : null}
+            {!editMode && (
+              <Building2
+                className="h-20 w-20 text-gray-400"
+                style={{ display: company.logoUrl ? "none" : "flex" }}
+              />
             )}
             <div>
               {editMode ? (
@@ -152,7 +203,9 @@ export default function CompanyDetail({ companyId }: { companyId: string }) {
                   className="text-3xl font-bold border-b border-gray-300 focus:outline-none focus:border-blue-500"
                 />
               ) : (
-                <h1 className="text-3xl font-bold text-gray-900">{company.name}</h1>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  {company.name}
+                </h1>
               )}
               {editMode ? (
                 <textarea
@@ -163,7 +216,9 @@ export default function CompanyDetail({ companyId }: { companyId: string }) {
                   className="mt-4 w-full border border-gray-300 rounded-lg p-2 focus:ring-blue-500"
                 />
               ) : (
-                <p className="text-gray-700 mt-4 whitespace-pre-wrap">{company.description}</p>
+                <p className="text-gray-700 mt-4 whitespace-pre-wrap">
+                  {company.description}
+                </p>
               )}
             </div>
           </div>
@@ -192,13 +247,27 @@ export default function CompanyDetail({ companyId }: { companyId: string }) {
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={() => setEditMode(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
-                >
-                  <Edit className="h-4 w-4" />
-                  <span>Edit</span>
-                </button>
+                <>
+                  <button
+                    onClick={handleDeleteCompany}
+                    disabled={deleting}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center space-x-2"
+                  >
+                    {deleting ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                    <span>{deleting ? "Deleting..." : "Delete"}</span>
+                  </button>
+                  <button
+                    onClick={() => setEditMode(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+                  >
+                    <Edit className="h-4 w-4" />
+                    <span>Edit</span>
+                  </button>
+                </>
               )}
             </div>
           )}
@@ -246,14 +315,14 @@ export default function CompanyDetail({ companyId }: { companyId: string }) {
         {error && <p className="text-red-600">{error}</p>}
       </div>
 
-      {/* Company’s Jobs */}
+      {/* Company's Jobs */}
       <div className="space-y-4">
         <h2 className="text-2xl font-bold text-gray-900">Open Roles</h2>
         {jobs.length === 0 ? (
           <p className="text-gray-600">No active job postings.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {jobs.map(job => (
+            {jobs.map((job) => (
               <div
                 key={job._id}
                 onClick={() => router.push(`/jobs/${job._id}`)}

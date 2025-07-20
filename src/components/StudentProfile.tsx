@@ -11,8 +11,10 @@ import {
   UploadCloud,
   Edit,
   Save,
+  Trash2,
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
+import { useRouter } from "next/navigation";
 
 interface Profile {
   name: string;
@@ -27,18 +29,18 @@ interface Profile {
 }
 
 interface Props {
-  userId: string;
+  userId: string; // This is now actually studentId from the params
   editable: boolean;
 }
 
-//We may consider adding the option to delete a student profile in the future, but for now, we will not implement it.
-
-export default function StudentProfile({ userId, editable }: Props) {
+export default function StudentProfile({ userId: studentId, editable }: Props) {
   const { data: session } = useSession();
+  const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [form, setForm] = useState<Partial<Profile>>({});
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState("");
@@ -54,39 +56,66 @@ export default function StudentProfile({ userId, editable }: Props) {
     "Chemical",
   ];
 
+  const isAdmin = session?.user?.role === "admin";
+
   useEffect(() => {
     fetchProfile();
-  }, [userId]);
+  }, [studentId]);
 
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get<{ 
-        success: boolean; 
-        profile: any;
-      }>("/api/student/profile");
-      
-      if (data.success && data.profile) {
-        // Map backend fields to frontend interface
+      const { data } = await axios.get<{
+        success: boolean;
+        student: any;
+      }>(`/api/admin/students/${studentId}`);
+
+      if (data.success && data.student) {
         const mappedProfile: Profile = {
-          name: data.profile.name || session?.user?.name || "",
-          email: data.profile.email || "",
-          enrollmentNo: data.profile.enrollmentNo,
-          branch: data.profile.branch,
-          year: data.profile.year,
-          cgpa: data.profile.cgpa,
-          resumeUrl: data.profile.resumeUrl,
-          skills: data.profile.skills || [],
-          isPlaced: data.profile.isPlaced || false
+          name: data.student.name || "",
+          email: data.student.email || "",
+          enrollmentNo: data.student.enrollmentNo,
+          branch: data.student.branch,
+          year: data.student.year,
+          cgpa: data.student.cgpa,
+          resumeUrl: data.student.resumeUrl,
+          skills: data.student.skills || [],
+          isPlaced: data.student.isPlaced || false,
         };
-        
+
         setProfile(mappedProfile);
         setForm(mappedProfile);
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
+      setError("Failed to load student profile");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (
+      !confirm(
+        "Are you sure you want to delete this student? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const { data } = await axios.delete(`/api/admin/students/${studentId}`);
+      if (data.success) {
+        router.push("/admin/students");
+      } else {
+        setError(data.message || "Failed to delete student");
+      }
+    } catch (error) {
+      console.error("Error deleting student:", error);
+      setError("Error deleting student");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -124,7 +153,7 @@ export default function StudentProfile({ userId, editable }: Props) {
         success: boolean;
         resumeUrl: string;
         message?: string;
-      }>(`/api/student/${userId}/uploadResume`, formData, {
+      }>(`/api/student/${studentId}/uploadResume`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       if (data.success) {
@@ -167,7 +196,6 @@ export default function StudentProfile({ userId, editable }: Props) {
       });
 
       if (data.success && data.profile) {
-        // Map the response back
         const mappedProfile: Profile = {
           name: data.profile.name || form.name || "",
           email: data.profile.email || form.email || "",
@@ -177,9 +205,9 @@ export default function StudentProfile({ userId, editable }: Props) {
           cgpa: data.profile.cgpa,
           resumeUrl: data.profile.resumeUrl,
           skills: data.profile.skills || [],
-          isPlaced: data.profile.isPlaced || false
+          isPlaced: data.profile.isPlaced || false,
         };
-        
+
         setProfile(mappedProfile);
         setEditMode(false);
         setSelectedFile(null);
@@ -234,14 +262,14 @@ export default function StudentProfile({ userId, editable }: Props) {
           No Profile Found
         </h2>
         <p className="mt-2 text-gray-600">
-          You haven't created your profile yet.
+          This student hasn't created their profile yet.
         </p>
         {editable && (
           <button
             onClick={() => {
               setEditMode(true);
               setForm({
-                name: session?.user?.name || "",
+                name: "",
                 email: "",
                 enrollmentNo: "",
                 branch: "",
@@ -249,7 +277,7 @@ export default function StudentProfile({ userId, editable }: Props) {
                 cgpa: 0,
                 resumeUrl: "",
                 skills: [],
-                isPlaced: false
+                isPlaced: false,
               });
             }}
             className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -269,45 +297,61 @@ export default function StudentProfile({ userId, editable }: Props) {
           <p className="text-gray-600">
             {editable
               ? editMode
-                ? "Fill in your details"
-                : "View or edit your profile"
+                ? "Fill in the details"
+                : "View or edit profile"
               : `Viewing ${profile?.name}'s profile`}
           </p>
         </div>
-        {editable && (
-          <div className="flex items-center space-x-2">
-            {editMode && (
-              <button
-                onClick={cancelEdit}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-            )}
+        <div className="flex items-center space-x-2">
+          {isAdmin && !editMode && (
             <button
-              onClick={() => (editMode ? handleSave() : setEditMode(true))}
-              disabled={saving}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-2 transition-colors"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center space-x-2 transition-colors"
             >
-              {saving ? (
+              {deleting ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              ) : editMode ? (
-                <Save className="h-4 w-4" />
               ) : (
-                <Edit className="h-4 w-4" />
+                <Trash2 className="h-4 w-4" />
               )}
-              <span>
-                {saving
-                  ? "Saving..."
-                  : editMode
-                    ? "Save"
-                    : profile
-                      ? "Edit"
-                      : "Create"}
-              </span>
+              <span>{deleting ? "Deleting..." : "Delete Student"}</span>
             </button>
-          </div>
-        )}
+          )}
+          {editable && !isAdmin && (
+            <>
+              {editMode && (
+                <button
+                  onClick={cancelEdit}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              )}
+              <button
+                onClick={() => (editMode ? handleSave() : setEditMode(true))}
+                disabled={saving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-2 transition-colors"
+              >
+                {saving ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                ) : editMode ? (
+                  <Save className="h-4 w-4" />
+                ) : (
+                  <Edit className="h-4 w-4" />
+                )}
+                <span>
+                  {saving
+                    ? "Saving..."
+                    : editMode
+                      ? "Save"
+                      : profile
+                        ? "Edit"
+                        : "Create"}
+                </span>
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -317,6 +361,7 @@ export default function StudentProfile({ userId, editable }: Props) {
       )}
 
       <div className="bg-white border border-gray-200 rounded-lg p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Full Name */}
         <div>
           <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-1">
             <User className="h-4 w-4" />
@@ -329,13 +374,14 @@ export default function StudentProfile({ userId, editable }: Props) {
               value={form.name || ""}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter your full name"
+              placeholder="Enter full name"
             />
           ) : (
-            <p className="text-gray-900">{session?.user?.name}</p>
+            <p className="text-gray-900">{profile?.name}</p>
           )}
         </div>
 
+        {/* Email */}
         <div>
           <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-1">
             <Mail className="h-4 w-4" />
@@ -348,13 +394,14 @@ export default function StudentProfile({ userId, editable }: Props) {
               value={form.email || ""}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter your email"
+              placeholder="Enter email"
             />
           ) : (
             <p className="text-gray-900">{profile?.email}</p>
           )}
         </div>
 
+        {/* Enrollment No */}
         <div>
           <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-1">
             <GraduationCap className="h-4 w-4" />
@@ -374,6 +421,7 @@ export default function StudentProfile({ userId, editable }: Props) {
           )}
         </div>
 
+        {/* Branch */}
         <div>
           <label className="text-sm font-medium text-gray-700 mb-1 block">
             Branch
@@ -397,6 +445,7 @@ export default function StudentProfile({ userId, editable }: Props) {
           )}
         </div>
 
+        {/* Year */}
         <div>
           <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-1">
             <Calendar className="h-4 w-4" />
@@ -421,6 +470,7 @@ export default function StudentProfile({ userId, editable }: Props) {
           )}
         </div>
 
+        {/* CGPA */}
         <div>
           <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-1">
             <Star className="h-4 w-4" />
@@ -443,6 +493,7 @@ export default function StudentProfile({ userId, editable }: Props) {
           )}
         </div>
 
+        {/* Skills */}
         <div className="md:col-span-2">
           <label className="text-sm font-medium text-gray-700 mb-1 block">
             Skills
@@ -473,10 +524,10 @@ export default function StudentProfile({ userId, editable }: Props) {
         </div>
       </div>
 
+      {/* Resume Section */}
       {editMode && (
         <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
           <h3 className="text-lg font-semibold text-gray-900">Resume</h3>
-
           <div
             {...getRootProps()}
             className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
@@ -491,7 +542,6 @@ export default function StudentProfile({ userId, editable }: Props) {
                 : "Drag & drop PDF/DOC here, or click to browse"}
             </p>
           </div>
-
           {profile?.resumeUrl && (
             <p className="mt-2 text-sm text-gray-600">
               Current resume:{" "}
@@ -507,7 +557,6 @@ export default function StudentProfile({ userId, editable }: Props) {
           )}
         </div>
       )}
-
       {!editMode && profile?.resumeUrl && (
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Resume</h3>
@@ -525,20 +574,25 @@ export default function StudentProfile({ userId, editable }: Props) {
       {/* Placement Status */}
       {!editMode && (
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Placement Status</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Placement Status
+          </h3>
           <div className="flex items-center space-x-2">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              profile?.isPlaced 
-                ? "bg-green-100 text-green-800" 
-                : "bg-yellow-100 text-yellow-800"
-            }`}>
+            <span
+              className={`px-3 py-1 rounded-full text-sm font-medium ${
+                profile?.isPlaced
+                  ? "bg-green-100 text-green-800"
+                  : "bg-yellow-100 text-yellow-800"
+              }`}
+            >
               {profile?.isPlaced ? "Placed" : "Not Placed"}
             </span>
           </div>
         </div>
       )}
 
-      {editable && (
+      {/* Profile Completion */}
+      {editable && !isAdmin && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h3 className="text-sm font-medium text-blue-800 mb-2">
             Profile Completion
@@ -578,7 +632,7 @@ export default function StudentProfile({ userId, editable }: Props) {
             </span>
           </div>
           <p className="text-xs text-blue-700 mt-2">
-            Complete your profile to improve your chances of getting hired!
+            Complete the profile to improve chances of getting hired!
           </p>
         </div>
       )}

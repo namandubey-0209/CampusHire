@@ -18,19 +18,15 @@ export async function GET(req: Request) {
         { status: 401 }
       );
     }
-
     const jobs = await Job.find().populate("postedBy", "_id name");
-    if (!jobs || jobs.length === 0) {
-      return Response.json(
-        { success: false, message: "Jobs not found" },
-        { status: 404 }
-      );
-    }
-
     return Response.json(
-      { success: true, message: "Fetched jobs", jobs },
+      {
+        success: true,
+        jobs: jobs || [],
+      },
       { status: 200 }
     );
+    
   } catch (error) {
     console.error("Error getting jobs", error);
     return Response.json(
@@ -61,21 +57,30 @@ export async function POST(req: Request) {
       );
     }
 
-    const { title, companyName, companyId, description, mode, location, minCGPA, eligibleBranches, lastDateToApply } =
-      await req.json();
+    const {
+      title,
+      companyName,
+      companyId,
+      description,
+      mode,
+      location,
+      minCGPA,
+      eligibleBranches,
+      lastDateToApply,
+    } = await req.json();
     const postedBy = new Types.ObjectId(user._id);
 
     if (
-        !title ||
-        !companyName ||
-        !postedBy ||
-        !companyId ||
-        !description ||
-        !mode ||
-        !location ||
-        !minCGPA ||
-        !eligibleBranches ||
-        !lastDateToApply
+      !title ||
+      !companyName ||
+      !postedBy ||
+      !companyId ||
+      !description ||
+      !mode ||
+      !location ||
+      !minCGPA ||
+      !eligibleBranches ||
+      !lastDateToApply
     ) {
       return NextResponse.json(
         { success: false, message: "Missing required fields" },
@@ -84,23 +89,22 @@ export async function POST(req: Request) {
     }
 
     const job = await Job.create({
-        title,
-        companyName,
-        postedBy,
-        companyId,
-        description,
-        mode,
-        location,
-        minCGPA,
-        eligibleBranches,
-        lastDateToApply,
+      title,
+      companyName,
+      postedBy,
+      companyId,
+      description,
+      mode,
+      location,
+      minCGPA,
+      eligibleBranches,
+      lastDateToApply,
     });
 
     return Response.json(
       { success: true, message: "Job created", job },
       { status: 200 }
     );
-
   } catch (error) {
     console.error("Job creation error", error);
     return Response.json(
@@ -109,5 +113,3 @@ export async function POST(req: Request) {
     );
   }
 }
-
-

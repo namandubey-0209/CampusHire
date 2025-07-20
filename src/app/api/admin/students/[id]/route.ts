@@ -5,6 +5,9 @@ import dbConnect from "@/lib/dbConnect";
 import User from "@/model/User";
 import StudentProfile from "@/model/StudentProfile";
 import { Types } from "mongoose";
+import Application from "@/model/Application";
+import mongoose from "mongoose";
+import Notification from "@/model/Notification";
 
 interface PopulatedStudent {
   _id: Types.ObjectId;
@@ -54,7 +57,6 @@ export async function GET(
   return NextResponse.json({ success: true, student: result });
 }
 
-
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -62,17 +64,34 @@ export async function DELETE(
   await dbConnect();
   const { id } = await params;
 
-  if (!id || typeof id !== "string") {
-    return NextResponse.json({ success: false, message: "Invalid student ID" }, { status: 400 });
+  // Validate ID
+  if (!id || typeof id !== "string" || !mongoose.Types.ObjectId.isValid(id)) {
+    return NextResponse.json(
+      { success: false, message: "Invalid student ID" },
+      { status: 400 }
+    );
   }
 
+  // Find the student profile
   const studentDoc = await StudentProfile.findById(id);
   if (!studentDoc) {
-    return NextResponse.json({ success: false, message: "Student not found" }, { status: 404 });
+    return NextResponse.json(
+      { success: false, message: "Student not found" },
+      { status: 404 }
+    );
   }
 
-  await StudentProfile.deleteOne({ _id: id });
-  await User.deleteOne({ _id: studentDoc.userId });
+  const userId = studentDoc.userId;
 
-  return NextResponse.json({ success: true, message: "Student deleted" });
+  await Promise.all([
+    Application.deleteMany({ studentId: studentDoc._id }),
+    Notification.deleteMany({ recipientId: userId }),
+    StudentProfile.deleteOne({ _id: studentDoc._id }),
+    User.deleteOne({ _id: userId }),
+  ]);
+
+  return NextResponse.json(
+    { success: true, message: "Student and all related data deleted" },
+    { status: 200 }
+  );
 }

@@ -23,7 +23,17 @@ const NotificationSchema: Schema<INotification> = new Schema(
   { timestamps: true }
 );
 
+NotificationSchema.index(
+  { 
+    recipientId: 1, 
+    type: 1, 
+    message: 1 
+  }, 
+  { unique: true }
+);
+
 const Notification =
   mongoose.models.Notification ||
   mongoose.model<INotification>("Notification", NotificationSchema);
+
 export default Notification;
