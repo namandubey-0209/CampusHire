@@ -31,6 +31,8 @@ interface Props {
   editable: boolean;
 }
 
+//We may consider adding the option to delete a student profile in the future, but for now, we will not implement it.
+
 export default function StudentProfile({ userId, editable }: Props) {
   const { data: session } = useSession();
   const [profile, setProfile] = useState<Profile | null>(null);

@@ -37,7 +37,7 @@ export default function CompanyDetail({ companyId }: { companyId: string }) {
       try {
         const [cRes, jRes] = await Promise.all([
           axios.get<{ success: boolean; companyProfile: Company }>(`/api/company/${companyId}`),
-          axios.get<{ success: boolean; jobs: Job[] }>(`/api/jobs?companyId=${companyId}`)
+          axios.get<{ success: boolean; jobs: Job[] }>(`/api/company/${companyId}/jobs`)
         ]);
 
         if (cRes.data.success) {
@@ -64,7 +64,7 @@ export default function CompanyDetail({ companyId }: { companyId: string }) {
     setSaving(true);
     setError("");
     try {
-      const { data } = await axios.put<{ success: boolean; company: Company; message?: string }>(
+      const { data } = await axios.patch<{ success: boolean; company: Company; message?: string }>(
         `/api/company/${companyId}`,
         form
       );

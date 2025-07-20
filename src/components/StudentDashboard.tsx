@@ -8,7 +8,7 @@ import { Plus, Briefcase, User, TrendingUp } from "lucide-react";
 
 interface Application {
   _id: string;
-  status: "applied" | "accepted" | "rejected";
+  status: "applied" | "shortlisted" | "rejected";
 }
 
 export default function StudentDashboard() {
@@ -38,7 +38,7 @@ export default function StudentDashboard() {
 
   const total = apps.length;
   const inProgress = apps.filter(a => a.status === "applied").length;
-  const accepted = apps.filter(a => a.status === "accepted").length;
+  const shortlisted = apps.filter(a => a.status === "shortlisted").length;
   const rejected = apps.filter(a => a.status === "rejected").length;
 
   return (
@@ -118,8 +118,8 @@ export default function StudentDashboard() {
               <div className="text-sm text-gray-600">In Progress</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{accepted}</div>
-              <div className="text-sm text-gray-600">Accepted</div>
+              <div className="text-2xl font-bold text-green-600">{shortlisted}</div>
+              <div className="text-sm text-gray-600">Shortlisted</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-red-600">{rejected}</div>

@@ -5,7 +5,7 @@ import DashboardLayout from "../../../components/DashboardLayout";
 import JobDetail from "@/components/JobDetail";
 
 interface Props {
-  params: { jobId: string };
+  params: Promise<{ jobId: string }>; // ← Changed to Promise
 }
 
 export default async function JobDetailPage({ params }: Props) {
@@ -15,9 +15,11 @@ export default async function JobDetailPage({ params }: Props) {
     redirect("/sign-in");
   }
 
+  const { jobId } = await params; // ← Await params before accessing properties
+
   return (
     <DashboardLayout>
-      <JobDetail jobId={params.jobId} />
+      <JobDetail jobId={jobId} />
     </DashboardLayout>
   );
 }

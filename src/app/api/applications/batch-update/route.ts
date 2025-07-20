@@ -1,32 +1,38 @@
-import { NextResponse } from "next/server";
+// File: src/app/api/applications/batch-update/route.ts
+
+import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import Application from "@/model/Application";
 import StudentProfile from "@/model/StudentProfile";
 import Notification from "@/model/Notification";
 
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
   await dbConnect();
-  const { acceptedIds, jobId } = await req.json();
+  const { acceptedIds, jobId } = await request.json();
 
+  // Fetch all applications for the job
   const apps = await Application.find({ jobId });
 
   await Promise.all(apps.map(async app => {
-    const accepted = acceptedIds.includes(app._id.toString());
-    app.status = accepted ? "accepted" : "rejected";
+    const isAccepted = acceptedIds.includes(app._id.toString());
+
+    // Use "shortlisted" in place of "accepted" to comply with your enum
+    app.status = isAccepted ? "shortlisted" : "rejected";
     await app.save();
 
+    // Update the student’s placement flag
     await StudentProfile.findOneAndUpdate(
       { userId: app.studentId },
-      { isPlaced: accepted },
+      { isPlaced: isAccepted },
       { new: true }
     );
 
-    // Send notification
+    // Send a notification
     await Notification.create({
       recipientId: app.studentId,
-      type: accepted ? "status_update" : "job_applied",
-      message: accepted
-        ? "Congratulations! Your application has been accepted."
+      type: "status_update",
+      message: isAccepted
+        ? "Congratulations! You have been shortlisted."
         : "We’re sorry—your application has been rejected.",
       isRead: false,
     });

@@ -8,7 +8,7 @@ import { FileText, Clock, CheckCircle, XCircle } from "lucide-react";
 interface Application {
   _id: string;
   jobId: { _id: string; title: string; companyName: string; };
-  status: "applied" | "accepted" | "rejected";
+  status: "applied" | "shortlisted" | "rejected";
   appliedAt: string;
 }
 
@@ -38,7 +38,7 @@ export default function ApplicationsList() {
 
   const statusMap = [
     { key: "applied", label: "In Progress", icon: Clock },
-    { key: "accepted", label: "Accepted", icon: CheckCircle },
+    { key: "shortlisted", label: "shortlisted", icon: CheckCircle },
     { key: "rejected", label: "Rejected", icon: XCircle },
   ] as const;
 

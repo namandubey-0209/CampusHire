@@ -5,7 +5,7 @@ import Application from "@/model/Application";
 export async function GET() {
   await dbConnect();
   try {
-    const count = await Application.countDocuments({});
+    const count = await Application.countDocuments({ status: "applied" });
     return NextResponse.json({ success: true, count }, { status: 200 });
   } catch (error) {
     console.error("Error fetching applications count:", error);

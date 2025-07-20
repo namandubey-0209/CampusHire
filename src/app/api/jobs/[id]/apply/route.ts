@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/dbConnect";
 import Application from "@/model/Application";
+import Job from "@/model/Job";          // import your Job model
 import mongoose from "mongoose";
 import StudentProfile from "@/model/StudentProfile";
 import axios from "axios";
@@ -23,8 +24,9 @@ export async function POST(
       );
     }
 
-    const { id } = await params;
+    const { id } = params;
 
+    // find student profile
     const studentProfile = await StudentProfile.findOne({
       userId: new mongoose.Types.ObjectId(user._id),
     });
@@ -36,6 +38,7 @@ export async function POST(
       );
     }
 
+    // prevent duplicate applications
     const alreadyApplied = await Application.findOne({
       jobId: id,
       studentId: studentProfile._id,
@@ -48,6 +51,7 @@ export async function POST(
       );
     }
 
+    // create the application
     const application = await Application.create({
       jobId: id,
       studentId: studentProfile._id,
@@ -55,6 +59,12 @@ export async function POST(
       appliedAt: new Date(),
     });
 
+    // update the job's lastDateToApply to now
+    await Job.findByIdAndUpdate(id, {
+      lastDateToApply: new Date(),
+    });
+
+    // send notification
     await axios.post(`${process.env.NEXTAUTH_URL}/api/notifications`, {
       recipientId: user._id,
       type: "job_applied",

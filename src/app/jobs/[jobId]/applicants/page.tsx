@@ -6,7 +6,7 @@ import DashboardLayout from "../../../../components/DashboardLayout";
 import JobApplicants from "@/components/JobApplicants";
 
 interface Props {
-  params: { jobId: string };
+  params: Promise<{ jobId: string }>; // ← Changed to Promise
 }
 
 export default async function JobApplicantsPage({ params }: Props) {
@@ -20,9 +20,11 @@ export default async function JobApplicantsPage({ params }: Props) {
     redirect("/dashboard");
   }
 
+  const { jobId } = await params; // ← Await params before accessing properties
+
   return (
     <DashboardLayout>
-      <JobApplicants jobId={params.jobId} />
+      <JobApplicants jobId={jobId} />
     </DashboardLayout>
   );
 }

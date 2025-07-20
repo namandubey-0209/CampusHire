@@ -46,6 +46,54 @@ export async function GET(
     }
 }
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  await dbConnect();
+
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== "admin") {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const { id } = await params;
+    const body = await request.json();
+
+    const existingCompany = await CompanyProfile.findById(id);
+    if (!existingCompany) {
+      return NextResponse.json(
+        { success: false, message: "Company not found" },
+        { status: 404 }
+      );
+    }
+
+    // Update only provided fields
+    existingCompany.name        = body.name        ?? existingCompany.name;
+    existingCompany.description = body.description ?? existingCompany.description;
+    existingCompany.website     = body.website     ?? existingCompany.website;
+    existingCompany.location    = body.location    ?? existingCompany.location;
+    existingCompany.logoUrl     = body.logoUrl     ?? existingCompany.logoUrl;
+
+    await existingCompany.save();
+
+    return NextResponse.json(
+      { success: true, company: existingCompany },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error updating company:", error);
+    return NextResponse.json(
+      { success: false, message: "Error updating company" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   req: Request, 
   { params }: { params: Promise<{ companyId: string }> }

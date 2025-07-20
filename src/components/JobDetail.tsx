@@ -7,7 +7,6 @@ import Link from "next/link";
 import {
   ArrowLeft,
   MapPin,
-  Clock,
   Building2,
   Calendar,
   GraduationCap,
@@ -30,10 +29,7 @@ interface Job {
   minCGPA: number;
   eligibleBranches: string[];
   lastDateToApply: string;
-  postedBy: {
-    _id: string;
-    name: string;
-  };
+  postedBy: { _id: string; name: string };
   createdAt: string;
 }
 
@@ -92,8 +88,22 @@ export default function JobDetail({ jobId }: JobDetailProps) {
     }
   };
 
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+  const isExpired = (dateString: string) =>
+    new Date(dateString) < new Date();
+
   const handleApply = async () => {
-    if (!isStudent) return;
+    if (!isStudent || !job) return;
+    if (isExpired(job.lastDateToApply)) {
+      setError("Cannot apply: the application deadline has passed.");
+      return;
+    }
 
     setApplying(true);
     setError("");
@@ -118,7 +128,6 @@ export default function JobDetail({ jobId }: JobDetailProps) {
 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this job?")) return;
-
     try {
       const { data } = await axios.delete(`/api/jobs/${jobId}`);
       if (data.success) {
@@ -130,18 +139,6 @@ export default function JobDetail({ jobId }: JobDetailProps) {
       setError("Error deleting job");
       console.error(err);
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
-  const isExpired = (dateString: string) => {
-    return new Date(dateString) < new Date();
   };
 
   if (loading) {

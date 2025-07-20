@@ -17,31 +17,40 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  async function fetchStats() {
-    setLoading(true);
-    try {
-      const [ jobsRes, companiesRes, studentsRes, appsRes ] = await Promise.all([
-        axios.get<{ success: boolean; jobs: any[] }>("/api/jobs"),
-        axios.get<{ success: boolean; companies: any[] }>("/api/companies"),
-        axios.get<{ success: boolean; count: number }>("/api/admin/students"),
-        axios.get<{ success: boolean; count: number }>("/api/admin/applications"),
-      ]);
+    async function fetchStats() {
+      setLoading(true);
+      try {
+        const [ jobsRes, companiesRes, studentsRes, appsRes ] = await Promise.all([
+          axios.get<{ success: boolean; jobs: Array<{ lastDateToApply: string }> }>("/api/jobs"),
+          axios.get<{ success: boolean; companies: any[] }>("/api/companies"),
+          axios.get<{ success: boolean; count: number }>("/api/admin/students"),
+          axios.get<{ success: boolean; count: number }>("/api/admin/applications"),
+        ]);
 
-      setStats({
-        jobs: jobsRes.data.success    ? jobsRes.data.jobs.length       : 0,
-        companies: companiesRes.data.success ? companiesRes.data.companies.length : 0,
-        students: studentsRes.data.success  ? studentsRes.data.count        : 0,
-        applications: appsRes.data.success   ? appsRes.data.count           : 0,
-      });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+        const today = new Date();
+
+        // Only count jobs whose lastDateToApply is today or in the future
+        const activeJobsCount = jobsRes.data.success
+          ? jobsRes.data.jobs.filter(job => {
+              const deadline = new Date(job.lastDateToApply);
+              return deadline >= today;
+            }).length
+          : 0;
+
+        setStats({
+          jobs: activeJobsCount,
+          companies: companiesRes.data.success ? companiesRes.data.companies.length : 0,
+          students: studentsRes.data.success ? studentsRes.data.count : 0,
+          applications: appsRes.data.success ? appsRes.data.count : 0,
+        });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     }
-  }
-  fetchStats();
-}, []);
-
+    fetchStats();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -73,7 +82,7 @@ export default function AdminDashboard() {
         </Link>
 
         <Link
-          href="/admin/companies"
+          href="/companies"
           className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
         >
           <div className="flex items-center space-x-3">
