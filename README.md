@@ -2,7 +2,8 @@
 
 **A comprehensive campus recruitment platform connecting students with their dream careers through seamless recruitment processes.**
 
-![CampusHire BannersHire is a modern web application designed to streamline the campus recruitment process for both students and companies. Built with Next.js 15 and TypeScript, it provides a robust platform where students can discover opportunities, manage applications, and companies can efficiently manage their recruitment pipeline.
+<!-- ## 🌐 Live Demo
+🔗 **[View Live Application](https://campushire.vercel.app)** -->
 
 ## ✨ Features
 
@@ -143,35 +144,98 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 ### User Model
 ```typescript
 interface IUser {
+  _id: Types.ObjectId;
   name: string;
   email: string;
   password: string;
   role: "student" | "admin";
   forgotPassCode?: string;
   forgotPassCodeExpiry?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 ```
 
 ### Student Profile
-- Personal information
-- Academic details
-- Skills and experience
-- Resume upload capability
+```typescript
+interface IStudentProfile {
+  _id: Types.ObjectId;
+  userId: Types.ObjectId; // Reference to User
+  personalInfo: {
+    phone: string;
+    address: string;
+    dateOfBirth: Date;
+  };
+  academicDetails: {
+    college: string;
+    course: string;
+    year: number;
+    cgpa: number;
+  };
+  skills: string[];
+  experience: string;
+  resume?: string; // File path or URL
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
 
 ### Company Profile
-- Company information
-- Contact details
-- Job postings management
+```typescript
+interface ICompanyProfile {
+  _id: Types.ObjectId;
+  userId: Types.ObjectId; // Reference to User (admin)
+  companyName: string;
+  description: string;
+  industry: string;
+  website: string;
+  contactInfo: {
+    email: string;
+    phone: string;
+    address: string;
+  };
+  logo?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
 
 ### Job Model
-- Job details and requirements
-- Application tracking
-- Company association
+```typescript
+interface IJob {
+  _id: Types.ObjectId;
+  companyId: Types.ObjectId; // Reference to CompanyProfile
+  title: string;
+  description: string;
+  requirements: string[];
+  location: string;
+  salary?: {
+    min: number;
+    max: number;
+    currency: string;
+  };
+  jobType: "full-time" | "part-time" | "internship";
+  applicationDeadline: Date;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
 
 ### Application Model
-- Student-job application mapping
-- Status tracking
-- Application timeline
+```typescript
+interface IUser {
+  _id: Types.ObjectId;
+  name: string;
+  email: string;
+  password: string;
+  role: "student" | "admin";
+  forgotPassCode?: string;
+  forgotPassCodeExpiry?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
 
 ## 🔐 Authentication Flow
 
@@ -235,9 +299,27 @@ We welcome contributions! Please follow these steps:
 ## 📸 Screenshots
 
 ### Student Dashboard
-![Student Dashboard](docs/images/student Panel
-![Admin Panel](docs/imagesnt
+![Student Dashboard](docs/screenshots/student-dashboard.png)
+*The main student dashboard showing job recommendations and application status*
 
+### Job Listings
+![Job Listings](docs/screenshots/job-listings.png)
+*Browse and search through available job opportunities*
+
+### Admin Panel
+![Admin Panel](docs/screenshots/admin-panel.png)
+*Administrative interface for managing jobs and applications*
+
+### Application Management
+![Application Management](docs/screenshots/application-management.png)
+*Track and manage student applications efficiently*
+
+### Authentication Flow
+![Login Page](docs/screenshots/login-page.png)
+*Secure login interface with forgot password option*
+
+![OTP Verification](docs/screenshots/otp-verification.png)
+*OTP verification page for password recovery*
 
 ## 🔧 Available Scripts
 
@@ -308,14 +390,3 @@ For support, questions, or feature requests:
 **CampusHire** - *Connecting talent with opportunity* 🎓✨
 
 Made with ❤️ by [Aniket Sahu](https://github.com/Aniket-Sahu), [Naman Dubey](https://github.com/namandubey-0209), and contributors.
-
-[1] https://github.com/Aniket-Sahu/CampusHire/
-[2] https://github.com/Aniket-Sahu/CampusHire/blob/main/package.json
-[3] https://github.com/Aniket-Sahu/CampusHire/blob/main/src/model/User.ts
-[4] https://github.com/Aniket-Sahu/CampusHire/tree/main/src/app
-[5] https://github.com/Aniket-Sahu/CampusHire/tree/main/src/components
-[6] https://github.com/Aniket-Sahu/CampusHire/tree/main/src/app/api
-[7] https://github.com/Aniket-Sahu/CampusHire/tree/main/src/model
-[8] https://github.com/Aniket-Sahu/CampusHire/blob/main/components.json
-[9] https://github.com/Aniket-Sahu/CampusHire/blob/main/src/app/page.tsx
-[10] https://github.com/Aniket-Sahu/CampusHire/tree/main/emails
