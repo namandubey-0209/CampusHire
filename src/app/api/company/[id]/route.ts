@@ -7,7 +7,7 @@ import Job from "@/model/Job";
 
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
 
@@ -22,7 +22,7 @@ export async function GET(
       );
     }
 
-    const { id } = context.params;
+    const { id } = (await context.params);
 
     const companyProfile = await CompanyProfile.findById(id);
     if (!companyProfile) {
@@ -48,7 +48,7 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
 
@@ -61,7 +61,7 @@ export async function PATCH(
       );
     }
 
-    const { id } = context.params;
+    const { id } = (await context.params);
     const body = await req.json();
 
     const existingCompany = await CompanyProfile.findById(id);
@@ -104,7 +104,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
 
@@ -117,7 +117,7 @@ export async function DELETE(
       );
     }
 
-    const { id } = context.params;
+    const { id } = (await context.params);
 
     await Job.deleteMany({ companyId: id });
     await CompanyProfile.findByIdAndDelete(id);

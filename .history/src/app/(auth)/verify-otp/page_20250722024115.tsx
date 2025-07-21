@@ -1,33 +1,10 @@
 'use client';
 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-// Loading component for Suspense fallback
-function LoadingSkeleton() {
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="animate-pulse">
-          <div className="mx-auto h-12 w-12 bg-gray-300 rounded-lg"></div>
-          <div className="mt-6 h-8 bg-gray-300 rounded w-48 mx-auto"></div>
-          <div className="mt-2 h-4 bg-gray-300 rounded w-64 mx-auto"></div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-          <div className="animate-pulse space-y-6">
-            <div className="h-4 bg-gray-300 rounded w-32"></div>
-            <div className="h-12 bg-gray-300 rounded"></div>
-            <div className="h-12 bg-gray-300 rounded"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Main OTP verification component that uses useSearchParams
-function VerifyOtpForm() {
+export default function VerifyOtpPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get('email') || '';
@@ -227,14 +204,5 @@ function VerifyOtpForm() {
         </div>
       </div>
     </div>
-  );
-}
-
-// Main exported component with Suspense wrapper
-export default function VerifyOtpPage() {
-  return (
-    <Suspense fallback={<LoadingSkeleton />}>
-      <VerifyOtpForm />
-    </Suspense>
   );
 }

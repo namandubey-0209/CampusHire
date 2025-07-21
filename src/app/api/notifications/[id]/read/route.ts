@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
 
@@ -21,7 +21,7 @@ export async function PATCH(
       );
     }
 
-    const { id } = context.params;
+    const { id } = (await context.params);
     const notification = await Notification.findById(id);
 
     if (!notification) {

@@ -5,12 +5,12 @@ import Job from "@/model/Job";
 
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string }  }
+  context: { params: Promise<{ id: string }>  }
 ) {
   await dbConnect();
   
   try {
-    const { id } =  context.params;
+    const { id } =  (await context.params);
     const jobs = await Job.find({ companyId: id })
       .select("title companyName companyId mode")
       .sort({ createdAt: -1 });

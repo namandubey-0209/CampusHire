@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
 
@@ -25,7 +25,7 @@ export async function POST(
       );
     }
 
-    const { id } = context.params;
+    const { id } = (await context.params);
 
     const studentProfile = await StudentProfile.findOne({
       userId: new mongoose.Types.ObjectId(user._id),

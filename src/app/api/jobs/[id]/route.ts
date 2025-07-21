@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
 
@@ -22,7 +22,7 @@ export async function GET(
       );
     }
 
-    const { id } = context.params;
+    const { id } = (await context.params);
     const job = await Job.findById(id);
 
     if (!job) {
@@ -48,7 +48,7 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
 
@@ -70,7 +70,7 @@ export async function PATCH(
       );
     }
 
-    const { id } = context.params;
+    const { id } = (await context.params);
     const body = await req.json();
 
     if (!Types.ObjectId.isValid(id)) {
@@ -118,7 +118,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
 
@@ -140,7 +140,7 @@ export async function DELETE(
       );
     }
 
-    const { id } = context.params;
+    const { id } = (await context.params);
 
     if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json(

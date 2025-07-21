@@ -6,7 +6,7 @@ import Notification from "@/model/Notification";
 
 export async function DELETE(
   req: NextRequest,
-  context: { params: { id: string }  }
+  context: { params: Promise<{ id: string }>  }
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -16,7 +16,7 @@ export async function DELETE(
   await dbConnect();
 
   try {
-    const { id } =  context.params;
+    const { id } =  (await context.params);
     const result = await Notification.findByIdAndDelete(id);
     if (!result) {
       return NextResponse.json({ success: false, message: "Notification not found" }, { status: 404 });

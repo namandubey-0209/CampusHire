@@ -27,10 +27,10 @@ interface PopulatedStudent {
 
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string }  }
+  context: { params: Promise<{ id: string }>  }
 ) {
   await dbConnect();
-  const { id } = context.params;
+  const { id } = (await context.params);
 
   const studentDoc = await StudentProfile.findById(id)
     .populate<{ userId: { name: string; email: string } }>("userId", "name email")
@@ -59,10 +59,10 @@ export async function GET(
 
 export async function DELETE(
   req: NextRequest,
-  context: { params: { id: string }  }
+  context: { params: Promise<{ id: string }>  }
 ) {
   await dbConnect();
-  const { id } =  context.params;
+  const { id } =  (await context.params);
 
   // Validate ID
   if (!id || typeof id !== "string" || !mongoose.Types.ObjectId.isValid(id)) {

@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
 
@@ -21,7 +21,7 @@ export async function GET(
       );
     }
 
-    const { id } = context.params;
+    const { id } = (await context.params);
 
     const studentProfile = await StudentProfile.findOne({ userId: id });
     if (!studentProfile) {

@@ -5,12 +5,12 @@ import dbConnect from "@/lib/dbConnect";
 
 export async function POST(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
 
-    const { id } = context.params;
+    const { id } = (await context.params);
 
     const formData = await request.formData();
     const file = formData.get("file") as File;
