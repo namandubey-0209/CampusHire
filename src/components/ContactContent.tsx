@@ -44,7 +44,7 @@ export default function ContactContent() {
         {/* Contact Information */}
         <div className="space-y-8">
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-6">Get In Touch</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-8">Get In Touch</h2>
             <div className="space-y-6">
               <div className="flex items-start space-x-4">
                 <div className="bg-blue-100 rounded-lg p-3 mt-1">
@@ -69,22 +69,7 @@ export default function ContactContent() {
                 <div>
                   <h3 className="text-lg font-medium text-gray-900">Call Us</h3>
                   <p className="text-gray-600 mb-2">Mon-Fri from 9am to 6pm IST</p>
-                  <p className="text-gray-900 font-medium">+91 (555) 123-4567</p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="bg-purple-100 rounded-lg p-3 mt-1">
-                  <MapPin className="h-6 w-6 text-purple-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900">Visit Us</h3>
-                  <p className="text-gray-600">
-                    CampusHire Technologies<br />
-                    123 Innovation Drive<br />
-                    Bangalore, Karnataka 560001<br />
-                    India
-                  </p>
+                  <p className="text-gray-900 font-medium">+91 86027 20532</p>
                 </div>
               </div>
             </div>

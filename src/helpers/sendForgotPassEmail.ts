@@ -14,8 +14,9 @@ export async function sendForgotPassEmail(
   
   try {
     const { data, error } = await resend.emails.send({
-      from: 'onboarding@resend.dev', // Use Resend's test domain
-      to: 'aniketsahu0307@gmail.com',
+      from: 'onboarding@resend.dev', // Using Resend's test domain
+      to: 'aniketsahu0307@gmail.com', // For testing, using a hardcoded email
+      // to: [email], // Will be used in production
       subject: 'CampusHire - Password Reset Code',
       react: forgotPassEmail({ username, otp }),
     });

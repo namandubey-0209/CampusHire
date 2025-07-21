@@ -145,7 +145,6 @@ export default function PrivacyContent() {
             <p className="mb-4">If you have any questions about this privacy policy, please contact us:</p>
             <div className="bg-gray-50 rounded-lg p-4">
               <p><strong>Email:</strong> campushire@gmail.com</p>
-              <p><strong>Address:</strong> CampusHire Technologies, 123 Innovation Drive, Bangalore, Karnataka 560001, India</p>
             </div>
           </div>
         </section>
