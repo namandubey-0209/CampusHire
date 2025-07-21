@@ -341,10 +341,7 @@ npm run lint
 
 - [ ] Mobile application
 - [ ] Advanced search filters
-- [ ] Interview scheduling system
-- [ ] Video interview integration
 - [ ] Analytics dashboard enhancements
-- [ ] Bulk application management
 
 ## 🐛 Known Issues & Troubleshooting
 
