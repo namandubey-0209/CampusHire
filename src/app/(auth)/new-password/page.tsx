@@ -28,9 +28,10 @@ export default function NewPasswordPage() {
     setLoading(true);
 
     try {
-      const res = await axios.post('/api/change-password', {
+      const res = await axios.patch('/api/set-new-pass', {
         email,
-        newPassword: password,
+        password: password,
+        confirmedPassword: confirm,
       });
 
       if (res.status === 200) {
@@ -104,7 +105,7 @@ export default function NewPasswordPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="w-full px-3 py-2 border text-gray-700 border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               placeholder="Enter new password"
             />
           </div>
@@ -120,7 +121,7 @@ export default function NewPasswordPage() {
               required
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="w-full px-3 py-2 border text-gray-700 border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               placeholder="Confirm new password"
             />
           </div>

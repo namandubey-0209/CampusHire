@@ -23,6 +23,8 @@ export async function POST(request: Request) {
       );
     }
 
+    console.log(user.forgotPassCode, otp);
+
     const isCodeValid = user.forgotPassCode === otp;
     const isCodeNotExpired = new Date(user.forgotPassCodeExpiry) > new Date();
 
