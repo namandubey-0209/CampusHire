@@ -2,11 +2,11 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/dbConnect";
 import Application from "@/model/Application";
-import Job from "@/model/Job";
+import Job from "@/model/Job"; // import your Job model
 import mongoose from "mongoose";
 import StudentProfile from "@/model/StudentProfile";
 import axios from "axios";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
 export async function POST(
   req: NextRequest,
@@ -19,20 +19,20 @@ export async function POST(
     const user = session?.user;
 
     if (!session || !user) {
-      return NextResponse.json(
+      return Response.json(
         { success: false, message: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    const { id } = context.params;
+    const { id } =  context.params;
 
     const studentProfile = await StudentProfile.findOne({
       userId: new mongoose.Types.ObjectId(user._id),
     });
 
     if (!studentProfile) {
-      return NextResponse.json(
+      return Response.json(
         { success: false, message: "Student profile not found" },
         { status: 404 }
       );
@@ -44,7 +44,7 @@ export async function POST(
     });
 
     if (alreadyApplied) {
-      return NextResponse.json(
+      return Response.json(
         { success: false, message: "Already applied" },
         { status: 409 }
       );
@@ -52,8 +52,8 @@ export async function POST(
 
     const job = await Job.findById(id);
 
-    if (studentProfile.isPlaced) {
-      return NextResponse.json(
+    if(studentProfile.isPlaced) {
+      return Response.json(
         { success: false, message: "You are already placed" },
         { status: 403 }
       );
@@ -63,7 +63,7 @@ export async function POST(
       studentProfile.cgpa < job.minCGPA ||
       !job.eligibleBranches.includes(studentProfile.branch)
     ) {
-      return NextResponse.json(
+      return Response.json(
         {
           success: false,
           message: "Your profile does not meet the job requirements",
@@ -72,6 +72,7 @@ export async function POST(
       );
     }
 
+    // create the application
     const application = await Application.create({
       jobId: id,
       studentId: studentProfile._id,
@@ -79,6 +80,7 @@ export async function POST(
       appliedAt: new Date(),
     });
 
+    // send notification
     await axios.post(`${process.env.NEXTAUTH_URL}/api/notifications`, {
       recipientId: user._id,
       type: "job_applied",
@@ -86,11 +88,10 @@ export async function POST(
       isRead: false,
     });
 
-    return NextResponse.json({ success: true, application }, { status: 201 });
-
+    return Response.json({ success: true, application }, { status: 201 });
   } catch (error) {
     console.error("Error applying to job:", error);
-    return NextResponse.json(
+    return Response.json(
       { success: false, message: "Error applying to job" },
       { status: 500 }
     );

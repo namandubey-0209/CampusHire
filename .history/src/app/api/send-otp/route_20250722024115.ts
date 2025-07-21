@@ -1,7 +1,6 @@
 import { sendForgotPassEmail } from "@/helpers/sendForgotPassEmail";
 import dbConnect from "@/lib/dbConnect";
 import UserModel from "@/model/User";
-import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   await dbConnect();
@@ -14,7 +13,7 @@ export async function POST(request: Request) {
     console.log("2. User found:", user ? "YES" : "NO");
 
     if (!user) {
-      return NextResponse.json(
+      return Response.json(
         { success: false, message: "User not found" },
         { status: 404 }
       );
@@ -22,7 +21,7 @@ export async function POST(request: Request) {
 
     if (user.forgotPassCodeExpiry && user.forgotPassCodeExpiry > new Date()) {
       console.log("3. OTP already active, blocking request");
-      return NextResponse.json(
+      return Response.json(
         { success: false, message: "OTP already sent. Please check your email or wait before requesting again." },
         { status: 400 }
       );
@@ -52,7 +51,7 @@ export async function POST(request: Request) {
     
     if (!emailResponse.success) {
       console.log("8. Email sending failed:", emailResponse.message);
-      return NextResponse.json(
+      return Response.json(
         {
           success: false,
           message: emailResponse.message,
@@ -62,7 +61,7 @@ export async function POST(request: Request) {
     }
 
     console.log("9. Email sent successfully");
-    return NextResponse.json(
+    return Response.json(
       {
         success: true,
         message: 'OTP successfully sent. Check your email inbox',
@@ -71,7 +70,7 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.error("Error in send-otp API:", error);
-    return NextResponse.json(
+    return Response.json(
       { success: false, message: "Error sending OTP" },
       { status: 500 }
     );

@@ -1,7 +1,6 @@
 import dbConnect from "@/lib/dbConnect";
 import User from "@/model/User";
 import bcrypt from "bcryptjs";
-import { NextResponse } from "next/server";
 
 //OAuth yet to be handled
 
@@ -13,7 +12,7 @@ export async function POST(request: Request) {
 
     const existingUserByEmail = await User.findOne({ email });
     if (existingUserByEmail) {
-      return new NextResponse(
+      return new Response(
         JSON.stringify({ success: false, message: "User exists with this email" }),
         { status: 400 }
       );
@@ -32,13 +31,13 @@ export async function POST(request: Request) {
 
     await newUser.save();
 
-    return new NextResponse(
+    return new Response(
       JSON.stringify({ success: true, message: "User created successfully" }),
       { status: 201 }
     );
   } catch (error) {
     console.error("Error signing up:", error);
-    return new NextResponse(
+    return new Response(
       JSON.stringify({ message: "Error signing up", success: false }),
       { status: 500 }
     );

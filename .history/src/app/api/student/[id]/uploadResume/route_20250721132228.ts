@@ -4,22 +4,19 @@ import path from "path";
 import dbConnect from "@/lib/dbConnect";
 
 export async function POST(
-  request: NextRequest,
-  context: { params: { id: string } }
+  request: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
-
-    const { id } = context.params;
+    
+    const { id } = await params;
 
     const formData = await request.formData();
     const file = formData.get("file") as File;
-
+    
     if (!file) {
-      return NextResponse.json(
-        { success: false, message: "No file received" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: "No file received" }, { status: 400 });
     }
 
     const bytes = await file.arrayBuffer();
@@ -34,7 +31,7 @@ export async function POST(
     } catch (error) {
       console.log("Directory already exists or creation failed:", error);
     }
-
+    
     await writeFile(filepath, buffer);
 
     const resumeUrl = `/resumes/${filename}`;
@@ -42,9 +39,6 @@ export async function POST(
     return NextResponse.json({ success: true, resumeUrl });
   } catch (error) {
     console.error("Upload error:", error);
-    return NextResponse.json(
-      { success: false, message: "Upload failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: "Upload failed" }, { status: 500 });
   }
 }

@@ -6,48 +6,49 @@ import { NextRequest, NextResponse } from "next/server";
 import Job from "@/model/Job";
 
 export async function GET(
-  req: NextRequest,
-  context: { params: { id: string } }
+    req: NextRequest,
+  context: { params: { id: string }  }
 ) {
-  await dbConnect();
+    await dbConnect();
 
-  try {
-    const session = await getServerSession(authOptions);
-    const user: User = session?.user as User;
+    try {
 
-    if (!session || !user) {
-      return NextResponse.json(
-        { success: false, message: "Not authenticated" },
-        { status: 401 }
-      );
+        const session = await getServerSession(authOptions);
+        const user: User = session?.user as User;
+
+        if(!session || !user){
+            return new Response(
+                JSON.stringify({ success: false, message: "Not authenticated" }),
+                { status: 401 }
+            );
+        }
+
+        const { id } =  context.params;
+
+        const companyProfile = await CompanyProfile.findById(id);
+        if (!companyProfile) {
+            return Response.json(
+                { success: false, message: "Company profile not found" },
+                { status: 404 }
+            );
+        }
+
+        return Response.json(
+            { success: true, message: "Fetched company profile", companyProfile },
+            { status: 200 }
+        );
+        
+    } catch (error) {
+        console.error("Error getting company profile", error);
+        return Response.json(
+            { success: false, message: "Error getting company profile" },
+            { status: 500 }
+        );
     }
-
-    const { id } = context.params;
-
-    const companyProfile = await CompanyProfile.findById(id);
-    if (!companyProfile) {
-      return NextResponse.json(
-        { success: false, message: "Company profile not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(
-      { success: true, message: "Fetched company profile", companyProfile },
-      { status: 200 }
-    );
-
-  } catch (error) {
-    console.error("Error getting company profile", error);
-    return NextResponse.json(
-      { success: false, message: "Error getting company profile" },
-      { status: 500 }
-    );
-  }
 }
 
 export async function PATCH(
-  req: NextRequest,
+   req: NextRequest,
   context: { params: { id: string } }
 ) {
   await dbConnect();
@@ -74,11 +75,11 @@ export async function PATCH(
 
     const oldName = existingCompany.name;
 
-    existingCompany.name = body.name ?? existingCompany.name;
+    existingCompany.name        = body.name        ?? existingCompany.name;
     existingCompany.description = body.description ?? existingCompany.description;
-    existingCompany.website = body.website ?? existingCompany.website;
-    existingCompany.location = body.location ?? existingCompany.location;
-    existingCompany.logoUrl = body.logoUrl ?? existingCompany.logoUrl;
+    existingCompany.website     = body.website     ?? existingCompany.website;
+    existingCompany.location    = body.location    ?? existingCompany.location;
+    existingCompany.logoUrl     = body.logoUrl     ?? existingCompany.logoUrl;
 
     await existingCompany.save();
 
@@ -117,9 +118,10 @@ export async function DELETE(
       );
     }
 
-    const { id } = context.params;
+    const { id } =  context.params;
 
     await Job.deleteMany({ companyId: id });
+
     await CompanyProfile.findByIdAndDelete(id);
 
     return NextResponse.json(

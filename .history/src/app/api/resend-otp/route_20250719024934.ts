@@ -1,7 +1,6 @@
 import { sendForgotPassEmail } from "@/helpers/sendForgotPassEmail";
 import dbConnect from "@/lib/dbConnect";
 import UserModel from "@/model/User";
-import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
     await dbConnect();
@@ -11,7 +10,7 @@ export async function POST(request: Request) {
         const user = await UserModel.findOne({ email: email });
 
         if (!user) {
-            return NextResponse.json(
+            return Response.json(
                 { success: false, message: "User not found" },
                 { status: 404 }
             );
@@ -31,7 +30,7 @@ export async function POST(request: Request) {
           otpCode
         );
         if (!emailResponse.success) {
-          return NextResponse.json(
+          return Response.json(
             {
               success: false,
               message: emailResponse.message,
@@ -40,7 +39,7 @@ export async function POST(request: Request) {
           );
         }
 
-        return NextResponse.json(
+        return Response.json(
             {
                 success: true,
                 message: 'OTP successfully sent. Check your mail inbox',
@@ -49,7 +48,7 @@ export async function POST(request: Request) {
         );
     } catch (error) {
         console.error("Error resending OTP:", error);
-        return NextResponse.json(
+        return Response.json(
             { success: false, message: "Error resending OTP" },
             { status: 500 }
         );

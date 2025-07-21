@@ -4,7 +4,6 @@ import dbConnect from "@/lib/dbConnect";
 import Application from "@/model/Application";
 import StudentProfile from "@/model/StudentProfile";
 import Job from "@/model/Job";
-import { NextResponse } from "next/server";
 
 export async function GET() {
   await dbConnect();
@@ -14,43 +13,32 @@ export async function GET() {
     const user = session?.user;
 
     if (!session || !user) {
-      return NextResponse.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
-      );
+      return Response.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
     const studentProfile = await StudentProfile.findOne({ userId: user._id });
 
     if (!studentProfile) {
-      return NextResponse.json(
-        {
-          success: true,
-          message: "Student profile not found",
-          applications: [],
-        },
-        { status: 200 }
-      );
+      return Response.json({ success: true, message: "Student profile not found", applications: [] }, { status: 200 });
     }
 
     const applications = await Application.find({ studentId: studentProfile._id })
-      .populate({
-        path: "jobId",
-        model: Job,
-        select: "title companyName companyId mode",
-      });
+    .populate({
+      path: "jobId",
+      model: Job,                              
+      select: "title companyName companyId mode"
+    });
 
-    return NextResponse.json({ success: true, applications }, { status: 200 });
+    return Response.json({ success: true, applications }, { status: 200 });
 
   } catch (error) {
     console.error("Error fetching applications:", error);
-    return NextResponse.json(
+    return Response.json(
       { success: false, message: "Error fetching applications" },
       { status: 500 }
     );
   }
 }
-
 
 /*
 Example Response:

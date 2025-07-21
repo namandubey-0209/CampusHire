@@ -13,25 +13,23 @@ export async function GET(req: Request) {
     const user: User = session?.user as User;
 
     if (!session || !user) {
-      return NextResponse.json(
-        { success: false, message: "Not authenticated" },
+      return new Response(
+        JSON.stringify({ success: false, message: "Not authenticated" }),
         { status: 401 }
       );
     }
-
     const jobs = await Job.find().populate("postedBy", "_id name");
-
-    return NextResponse.json(
+    return Response.json(
       {
         success: true,
         jobs: jobs || [],
       },
       { status: 200 }
     );
-
+    
   } catch (error) {
     console.error("Error getting jobs", error);
-    return NextResponse.json(
+    return Response.json(
       { success: false, message: "Error getting jobs" },
       { status: 500 }
     );
@@ -46,15 +44,15 @@ export async function POST(req: Request) {
     const user: User = session?.user as User;
 
     if (!session || !user) {
-      return NextResponse.json(
-        { success: false, message: "Not authenticated" },
+      return new Response(
+        JSON.stringify({ success: false, message: "Not authenticated" }),
         { status: 401 }
       );
     }
 
     if (user.role !== "admin") {
-      return NextResponse.json(
-        { success: false, message: "Forbidden" },
+      return new Response(
+        JSON.stringify({ success: false, message: "Forbidden" }),
         { status: 403 }
       );
     }
@@ -70,7 +68,6 @@ export async function POST(req: Request) {
       eligibleBranches,
       lastDateToApply,
     } = await req.json();
-
     const postedBy = new Types.ObjectId(user._id);
 
     if (
@@ -104,14 +101,13 @@ export async function POST(req: Request) {
       lastDateToApply,
     });
 
-    return NextResponse.json(
+    return Response.json(
       { success: true, message: "Job created", job },
       { status: 200 }
     );
-
   } catch (error) {
     console.error("Job creation error", error);
-    return NextResponse.json(
+    return Response.json(
       { success: false, message: "Error creating job" },
       { status: 500 }
     );
