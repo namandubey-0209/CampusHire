@@ -296,32 +296,36 @@ export default function JobDetail({ jobId }: JobDetailProps) {
             <div className="flex items-center space-x-3">
               <MapPin className="h-5 w-5 text-gray-400" />
               <div>
-                <p className="text-sm text-gray-500">Location</p>
-                <p className="font-medium">{job.location}</p>
+                <p className="text-sm text-gray-700">Location</p>
+                <p className="font-medium text-gray-700">{job.location}</p>
               </div>
             </div>
 
             <div className="flex items-center space-x-3">
               <Building2 className="h-5 w-5 text-gray-400" />
               <div>
-                <p className="text-sm text-gray-500">Work Mode</p>
-                <p className="font-medium capitalize">{job.mode}</p>
+                <p className="text-sm text-gray-700">Work Mode</p>
+                <p className="font-medium text-gray-700 capitalize">
+                  {job.mode}
+                </p>
               </div>
             </div>
 
             <div className="flex items-center space-x-3">
               <GraduationCap className="h-5 w-5 text-gray-400" />
               <div>
-                <p className="text-sm text-gray-500">Min CGPA</p>
-                <p className="font-medium">{job.minCGPA}</p>
+                <p className="text-sm text-gray-700">Min CGPA</p>
+                <p className="font-medium text-gray-700">{job.minCGPA}</p>
               </div>
             </div>
 
             <div className="flex items-center space-x-3">
               <Calendar className="h-5 w-5 text-gray-400" />
               <div>
-                <p className="text-sm text-gray-500">Deadline</p>
-                <p className="font-medium">{formatDate(job.lastDateToApply)}</p>
+                <p className="text-sm text-gray-700">Deadline</p>
+                <p className="font-medium text-gray-700">
+                  {formatDate(job.lastDateToApply)}
+                </p>
               </div>
             </div>
           </div>

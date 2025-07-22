@@ -16,12 +16,10 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials: any): Promise<any> {
         try {
           await dbConnect();
-          const user = await User.findOne(
-              { email: credentials.identifier },
-          );
+          const user = await User.findOne({ email: credentials.identifier });
 
           if (!user) {
-            throw new Error("Invalid credentials"); 
+            throw new Error("Invalid credentials");
           }
 
           const isPasswordCorrect = await bcrypt.compare(
@@ -41,7 +39,7 @@ export const authOptions: NextAuthOptions = {
           };
         } catch (err: any) {
           console.error("Authorization error:", err);
-          throw new Error("Unable to log in"); 
+          throw new Error("Unable to log in");
         }
       },
     }),
@@ -57,7 +55,7 @@ export const authOptions: NextAuthOptions = {
           token._id = token.sub;
         }
       }
-      
+
       return token;
     },
     async session({ session, token }) {
@@ -68,7 +66,7 @@ export const authOptions: NextAuthOptions = {
           role: token.role as string,
         };
       }
-      
+
       return session;
     },
   },
@@ -77,6 +75,10 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
+    maxAge: 7 * 24 * 60 * 60,
+  },
+  jwt: {
+    maxAge: 7 * 24 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
 };

@@ -23,7 +23,7 @@ export async function GET(
     }
 
     const { id } = (await context.params);
-    const job = await Job.findById(id);
+    const job = await Job.findById(id).populate("postedBy", "_id name");
 
     if (!job) {
       return NextResponse.json(

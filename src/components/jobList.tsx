@@ -15,7 +15,7 @@ import {
   Plus,
   Edit,
   Trash2,
-  CheckCircle
+  CheckCircle,
 } from "lucide-react";
 
 interface Job {
@@ -80,7 +80,9 @@ export default function JobsList() {
     try {
       const { data } = await axios.get("/api/applications");
       if (data.success) {
-        const jobIds = data.applications.map((app: any) => app.jobId._id || app.jobId);
+        const jobIds = data.applications.map(
+          (app: any) => app.jobId._id || app.jobId
+        );
         setAppliedJobs(jobIds);
       }
     } catch (error) {
@@ -94,7 +96,7 @@ export default function JobsList() {
     try {
       const { data } = await axios.delete(`/api/jobs/${jobId}`);
       if (data.success) {
-        setJobs(jobs.filter(job => job._id !== jobId));
+        setJobs(jobs.filter((job) => job._id !== jobId));
       } else {
         setError(data.message || "Failed to delete job");
       }
@@ -114,7 +116,7 @@ export default function JobsList() {
       const { data } = await axios.post(`/api/jobs/${jobId}/apply`);
 
       if (data.success) {
-        setAppliedJobs(prev => [...prev, jobId]);
+        setAppliedJobs((prev) => [...prev, jobId]);
         // Optionally show success message
       } else {
         setError(data.message || "Failed to apply");
@@ -134,12 +136,16 @@ export default function JobsList() {
     return true;
   };
 
-  const filteredJobs = jobs.filter(job => {
-    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredJobs = jobs.filter((job) => {
+    const matchesSearch =
+      job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       job.companyName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesLocation = locationFilter === "" || job.location.toLowerCase().includes(locationFilter.toLowerCase());
+    const matchesLocation =
+      locationFilter === "" ||
+      job.location.toLowerCase().includes(locationFilter.toLowerCase());
     const matchesMode = modeFilter === "" || job.mode === modeFilter;
-    const matchesBranch = branchFilter === "" || job.eligibleBranches.includes(branchFilter);
+    const matchesBranch =
+      branchFilter === "" || job.eligibleBranches.includes(branchFilter);
 
     return matchesSearch && matchesLocation && matchesMode && matchesBranch;
   });
@@ -148,7 +154,7 @@ export default function JobsList() {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
-      day: "numeric"
+      day: "numeric",
     });
   };
 
@@ -173,7 +179,9 @@ export default function JobsList() {
             {isAdmin ? "Manage Jobs" : "Browse Jobs"}
           </h1>
           <p className="text-gray-600 mt-1">
-            {isAdmin ? "Create, edit, and manage job postings" : "Find your next opportunity"}
+            {isAdmin
+              ? "Create, edit, and manage job postings"
+              : "Find your next opportunity"}
           </p>
         </div>
 
@@ -240,7 +248,6 @@ export default function JobsList() {
         </div>
       </div>
 
-
       {/* Error Message */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -253,17 +260,22 @@ export default function JobsList() {
         {filteredJobs.length === 0 ? (
           <div className="text-center py-12">
             <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No jobs found
+            </h3>
             <p className="text-gray-600">
-              {jobs.length === 0 ? "No jobs posted yet." : "Try adjusting your filters."}
+              {jobs.length === 0
+                ? "No jobs posted yet."
+                : "Try adjusting your filters."}
             </p>
           </div>
         ) : (
           filteredJobs.map((job) => (
             <div
               key={job._id}
-              className={`bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow ${isExpired(job.lastDateToApply) ? "opacity-60" : ""
-                }`}
+              className={`bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow ${
+                isExpired(job.lastDateToApply) ? "opacity-60" : ""
+              }`}
             >
               <div className="flex justify-between items-start">
                 <div className="flex-1">
@@ -317,10 +329,19 @@ export default function JobsList() {
 
                   <div className="mt-4 flex items-center gap-4 text-sm">
                     <span className="text-gray-500">
-                      Min CGPA: <span className="font-medium">{job.minCGPA}</span>
+                      Min CGPA:{" "}
+                      <span className="font-medium">{job.minCGPA}</span>
                     </span>
                     <span className="text-gray-500">
-                      Eligible: <span className="font-medium">{job.eligibleBranches.join(", ")}</span>
+                      Eligible:{" "}
+                      <span className="font-medium">
+                        {job.eligibleBranches.join(", ")}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="mt-2 text-right">
+                    <span className="text-xs text-gray-400 italic">
+                      Posted by: {job.postedBy?.name || "Unknown"}
                     </span>
                   </div>
 
@@ -330,7 +351,9 @@ export default function JobsList() {
                       {appliedJobs.includes(job._id) ? (
                         <div className="flex items-center space-x-2 text-green-600">
                           <CheckCircle className="h-4 w-4" />
-                          <span className="text-sm font-medium">Already Applied</span>
+                          <span className="text-sm font-medium">
+                            Already Applied
+                          </span>
                         </div>
                       ) : isExpired(job.lastDateToApply) ? (
                         <div className="px-4 py-2 bg-gray-100 text-gray-500 rounded-lg text-sm">
