@@ -9,22 +9,11 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
-              <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
-                <svg
-                  className="h-5 w-5 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6"
-                  />
-                </svg>
+              <div className="flex items-center mr-3">
+                <span className="text-2xl font-bold text-gray-700">
+                  CampusHire
+                </span>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">CampusHire</h1>
             </div>
             <div className="flex items-center space-x-4">
               <Link
@@ -46,22 +35,15 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="py-20 lg:py-24">
+        <div className="py-20 lg:py-16">
           <div className="text-center">
-            <div className="mx-auto h-16 w-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-8">
-              <svg
-                className="h-8 w-8 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                />
-              </svg>
+            <div className="flex flex-col items-center justify-start mb-8">
+              <img
+                src="/logo_campus_hire.svg"
+                alt="CampusHire Logo"
+                className="h-44 w-auto object-contain"
+                style={{ display: "block", marginTop: 0, marginBottom: 0 }}
+              />
             </div>
 
             <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
@@ -285,26 +267,17 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 mt-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center mb-4">
-                <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
-                  <svg
-                    className="h-5 w-5 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6"
-                    />
-                  </svg>
+                <div className="mr-3">
+                  <img
+                    src="/logo_campus_hire.svg"
+                    alt="CampusHire Logo"
+                    className="h-28 w-auto object-contain"
+                  />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900">CampusHire</h3>
               </div>
               <p className="text-gray-600 mb-4">
                 Connecting students with their dream careers through campus
