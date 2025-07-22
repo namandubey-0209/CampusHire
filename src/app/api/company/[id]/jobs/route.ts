@@ -4,13 +4,13 @@ import dbConnect from "@/lib/dbConnect";
 import Job from "@/model/Job";
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  req: NextRequest,
+  context: { params: Promise<{ id: string }>  }
 ) {
   await dbConnect();
   
   try {
-    const { id } = await params;
+    const { id } =  (await context.params);
     const jobs = await Job.find({ companyId: id })
       .select("title companyName companyId mode")
       .sort({ createdAt: -1 });

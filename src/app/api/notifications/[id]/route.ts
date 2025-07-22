@@ -5,8 +5,8 @@ import dbConnect from "@/lib/dbConnect";
 import Notification from "@/model/Notification";
 
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  context: { params: Promise<{ id: string }>  }
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -16,7 +16,7 @@ export async function DELETE(
   await dbConnect();
 
   try {
-    const { id } = await params;
+    const { id } =  (await context.params);
     const result = await Notification.findByIdAndDelete(id);
     if (!result) {
       return NextResponse.json({ success: false, message: "Notification not found" }, { status: 404 });

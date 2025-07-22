@@ -7,8 +7,8 @@ import Job from "@/model/Job";
 import Application from "@/model/Application";
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  req: NextRequest,
+  context: { params: Promise<{ id: string }>  }
 ) {
   await dbConnect();
   const session = await getServerSession(authOptions);
@@ -19,7 +19,7 @@ export async function GET(
     return NextResponse.json({ success: false, message: "Forbidden" }, { status: 403 });
   }
 
-  const { id } = await params;
+  const { id } =  (await context.params);
   const job = await Job.findById(id);
   if (!job) {
     return NextResponse.json({ success: false, message: "Job not found" }, { status: 404 });

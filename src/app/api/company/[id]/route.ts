@@ -6,50 +6,49 @@ import { NextRequest, NextResponse } from "next/server";
 import Job from "@/model/Job";
 
 export async function GET(
-    req: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
-    await dbConnect();
+  await dbConnect();
 
-    try {
+  try {
+    const session = await getServerSession(authOptions);
+    const user: User = session?.user as User;
 
-        const session = await getServerSession(authOptions);
-        const user: User = session?.user as User;
-
-        if(!session || !user){
-            return new Response(
-                JSON.stringify({ success: false, message: "Not authenticated" }),
-                { status: 401 }
-            );
-        }
-
-        const { id } = await params;
-
-        const companyProfile = await CompanyProfile.findById(id);
-        if (!companyProfile) {
-            return Response.json(
-                { success: false, message: "Company profile not found" },
-                { status: 404 }
-            );
-        }
-
-        return Response.json(
-            { success: true, message: "Fetched company profile", companyProfile },
-            { status: 200 }
-        );
-        
-    } catch (error) {
-        console.error("Error getting company profile", error);
-        return Response.json(
-            { success: false, message: "Error getting company profile" },
-            { status: 500 }
-        );
+    if (!session || !user) {
+      return NextResponse.json(
+        { success: false, message: "Not authenticated" },
+        { status: 401 }
+      );
     }
+
+    const { id } = (await context.params);
+
+    const companyProfile = await CompanyProfile.findById(id);
+    if (!companyProfile) {
+      return NextResponse.json(
+        { success: false, message: "Company profile not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(
+      { success: true, message: "Fetched company profile", companyProfile },
+      { status: 200 }
+    );
+
+  } catch (error) {
+    console.error("Error getting company profile", error);
+    return NextResponse.json(
+      { success: false, message: "Error getting company profile" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
 
@@ -62,8 +61,8 @@ export async function PATCH(
       );
     }
 
-    const { id } = await params;
-    const body = await request.json();
+    const { id } = (await context.params);
+    const body = await req.json();
 
     const existingCompany = await CompanyProfile.findById(id);
     if (!existingCompany) {
@@ -75,11 +74,11 @@ export async function PATCH(
 
     const oldName = existingCompany.name;
 
-    existingCompany.name        = body.name        ?? existingCompany.name;
+    existingCompany.name = body.name ?? existingCompany.name;
     existingCompany.description = body.description ?? existingCompany.description;
-    existingCompany.website     = body.website     ?? existingCompany.website;
-    existingCompany.location    = body.location    ?? existingCompany.location;
-    existingCompany.logoUrl     = body.logoUrl     ?? existingCompany.logoUrl;
+    existingCompany.website = body.website ?? existingCompany.website;
+    existingCompany.location = body.location ?? existingCompany.location;
+    existingCompany.logoUrl = body.logoUrl ?? existingCompany.logoUrl;
 
     await existingCompany.save();
 
@@ -104,8 +103,8 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
 
@@ -118,10 +117,9 @@ export async function DELETE(
       );
     }
 
-    const { id } = await params;
+    const { id } = (await context.params);
 
     await Job.deleteMany({ companyId: id });
-
     await CompanyProfile.findByIdAndDelete(id);
 
     return NextResponse.json(
