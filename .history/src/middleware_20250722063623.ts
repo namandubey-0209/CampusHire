@@ -21,8 +21,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
+  // ✅ Fixed: Redirect unauthenticated users to sign-in, not landing page
   if (!token && url.pathname.startsWith("/dashboard")) {
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL("/sign-in", request.url));
   }
 
   return NextResponse.next();

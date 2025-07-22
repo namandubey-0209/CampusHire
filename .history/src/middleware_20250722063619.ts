@@ -8,10 +8,11 @@ export const config = {
 export async function middleware(request: NextRequest) {
   const token = await getToken({ 
     req: request,
-    secret: process.env.NEXTAUTH_SECRET  
+    secret: process.env.NEXTAUTH_SECRET  // ✅ Explicitly provide secret
   });
   const url = request.nextUrl;
 
+  // ✅ If authenticated user tries to access auth pages, redirect to dashboard
   if (
     token &&
     (url.pathname.startsWith("/sign-in") ||
@@ -21,8 +22,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
+  // ✅ Fixed: Redirect unauthenticated users to sign-in, not landing page
   if (!token && url.pathname.startsWith("/dashboard")) {
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL("/sign-in", request.url));
   }
 
   return NextResponse.next();
