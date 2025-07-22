@@ -43,7 +43,7 @@ export default function SignInPage() {
     });
 
     if (res?.ok) {
-      window.location.href = '/dashboard';
+      rwindow.location.href = '/dashboard';
     } else {
       setError('Invalid email or password');
     }
