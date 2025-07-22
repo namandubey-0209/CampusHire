@@ -109,7 +109,7 @@ export default function Header() {
                   <button
                     onClick={() => {
                       setOpen(false);
-                      signOut();
+                      signOut({ callbackUrl: "/" });
                     }}
                     className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
                   >
