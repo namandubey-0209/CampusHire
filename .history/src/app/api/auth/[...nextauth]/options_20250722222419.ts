@@ -82,4 +82,4 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
-//o-auth implementation 
+//next auth 
