@@ -2,8 +2,8 @@
 
 **A comprehensive campus recruitment platform connecting students with their dream careers through seamless recruitment processes.**
 
-<!-- ## 🌐 Live Demo
-🔗 **[View Live Application](https://campushire.vercel.app)** -->
+## 🌐 Live Demo
+🔗 **[View Live Application](https://campus-hire-omega.vercel.app/)**
 
 ## ✨ Features
 
