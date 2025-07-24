@@ -7,6 +7,7 @@ import Job from "@/model/Job";
 
 export async function POST(request: NextRequest) {
   await dbConnect();
+
   const { acceptedIds, jobId } = await request.json();
 
   const job = await Job.findById(jobId).select('title companyName');
@@ -19,22 +20,20 @@ export async function POST(request: NextRequest) {
 
   const apps = await Application.find({ jobId });
 
-  await Promise.all(apps.map(async app => {
+  await Promise.all(apps.map(async (app) => {
     const isAccepted = acceptedIds.includes(app._id.toString());
 
     app.status = isAccepted ? "shortlisted" : "rejected";
     await app.save();
 
-    await StudentProfile.findOneAndUpdate(
-      { userId: app.studentId },
-      { isPlaced: isAccepted },
-      { new: true }
-    );
+    const studentProfile = await StudentProfile.findById(app.studentId);
+    studentProfile.isPlaced = isAccepted;
+    await studentProfile.save();
 
     const jobInfo = `${job.title} at ${job.companyName}`;
     try {
       await Notification.create({
-        recipientId: app.studentId,
+        recipientId: studentProfile.userId,
         type: "status_update",
         message: isAccepted
           ? `Congratulations! You have been shortlisted for ${jobInfo}.`

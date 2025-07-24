@@ -18,6 +18,8 @@ export async function GET() {
       );
     }
 
+    console.log("Fetching notifications for user:", user._id);
+
     const notifications = await Notification.find({
       recipientId: user._id,
     }).sort({ createdAt: -1 });
