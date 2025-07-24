@@ -44,52 +44,52 @@ function NewPasswordForm() {
   }, [email, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
+  e.preventDefault();
+  setError('');
+  setSuccess('');
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
+  if (password !== confirmPassword) {
+    setError('Passwords do not match');
+    return;
+  }
+
+  if (password.length < 6) {
+    setError('Password must be at least 6 characters long');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const res = await axios.post('/api/set-new-pass', {
+      email: email,
+      password: password,
+      confirmedPassword: confirmPassword,
+    });
+
+    if (res.data.success) {  // Check success field
+      setSuccess('Password reset successfully!');
+      setTimeout(() => {
+        router.push('/sign-in');
+      }, 2000);
+    } else {
+      setError(res.data.message || 'Failed to reset password');
     }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return;
+  } catch (err: any) {
+    console.error('Password reset error:', err);  // Add console logging
+    if (err.response?.data?.message) {
+      setError(err.response.data.message);
+    } else if (err.response?.status === 404) {
+      setError('User not found');
+    } else if (err.response?.status === 400) {
+      setError('Invalid request. Please check your input.');
+    } else {
+      setError('Network error. Please try again.');
     }
-
-    setLoading(true);
-
-    try {
-      const res = await axios.post('/api/set-new-pass', {
-        email: email,
-        password: password,
-        confirmedPassword: confirmPassword,
-      });
-
-      if (res.data.success) {  // Check success field
-        setSuccess('Password reset successfully!');
-        setTimeout(() => {
-          router.push('/sign-in');
-        }, 2000);
-      } else {
-        setError(res.data.message || 'Failed to reset password');
-      }
-    } catch (err: any) {
-      console.error('Password reset error:', err);  // Add console logging
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else if (err.response?.status === 404) {
-        setError('User not found');
-      } else if (err.response?.status === 400) {
-        setError('Invalid request. Please check your input.');
-      } else {
-        setError('Network error. Please try again.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
 
   if (!email) {
