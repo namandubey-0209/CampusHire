@@ -67,30 +67,18 @@ function NewPasswordForm() {
         confirmedPassword: confirmPassword,
       });
 
-      if (res.data.success) {  // Check success field
+      if (res.status === 200) {
         setSuccess('Password reset successfully!');
         setTimeout(() => {
           router.push('/sign-in');
         }, 2000);
-      } else {
-        setError(res.data.message || 'Failed to reset password');
       }
     } catch (err: any) {
-      console.error('Password reset error:', err);  // Add console logging
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else if (err.response?.status === 404) {
-        setError('User not found');
-      } else if (err.response?.status === 400) {
-        setError('Invalid request. Please check your input.');
-      } else {
-        setError('Network error. Please try again.');
-      }
+      setError(err.response?.data?.message || 'Failed to reset password');
     } finally {
       setLoading(false);
     }
   };
-
 
   if (!email) {
     return null;
