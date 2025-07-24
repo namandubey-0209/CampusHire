@@ -61,9 +61,10 @@ function NewPasswordForm() {
     setLoading(true);
 
     try {
-      const res = await axios.post('/api/reset-password', {
-        email: decodeURIComponent(email),
-        newPassword: password,
+      const res = await axios.post('/api/set-new-pass', {
+        email: email,
+        password: password,
+        confirmedPassword: confirmPassword,
       });
 
       if (res.status === 200) {

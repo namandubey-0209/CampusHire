@@ -60,25 +60,6 @@ export default function JobApplicants({ jobId }: { jobId: string }) {
     }
   }
 
-  async function updateApplicationStatus(applicationId: string, studentUserId: string, status: string) {
-    try {
-      await axios.put(`/api/applications/${applicationId}`, { status });
-      
-      // Update student's isPlaced status if accepted
-      if (status === "accepted") {
-        await axios.put(`/api/student/profile`, { 
-          userId: studentUserId, 
-          isPlaced: true 
-        });
-      }
-      
-      await fetchApplicants();
-    } catch (err) {
-      console.error(err);
-      setError("Failed to update application status.");
-    }
-  }
-
   const filteredApplicants = applicants.filter(app => 
     statusFilter === "all" || app.status === statusFilter
   );
@@ -211,25 +192,7 @@ export default function JobApplicants({ jobId }: { jobId: string }) {
                   </span>
                 </div>
 
-                <div className="flex items-center space-x-3">
-                  {/* Individual Action Buttons */}
-                  {app.status === "applied" && (
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => updateApplicationStatus(app._id, app.studentId.userId._id, "accepted")}
-                        className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors"
-                      >
-                        Accept
-                      </button>
-                      <button
-                        onClick={() => updateApplicationStatus(app._id, app.studentId.userId._id, "rejected")}
-                        className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition-colors"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  )}
-                  
+                <div className="flex items-center space-x-3">                  
                   <Link
                     href={`/admin/student/${app.studentId._id}`}
                     className="text-blue-600 hover:text-blue-700 p-2 rounded-lg hover:bg-blue-50 transition-colors flex items-center"
