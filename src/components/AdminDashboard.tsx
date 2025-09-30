@@ -20,35 +20,26 @@ export default function AdminDashboard() {
     async function fetchStats() {
       setLoading(true);
       try {
-        const [ jobsRes, companiesRes, studentsRes, appsRes ] = await Promise.all([
-          axios.get<{ success: boolean; jobs: Array<{ lastDateToApply: string }> }>("/api/jobs"),
-          axios.get<{ success: boolean; companies: any[] }>("/api/companies"),
-          axios.get<{ success: boolean; count: number }>("/api/admin/students"),
-          axios.get<{ success: boolean; count: number }>("/api/admin/applications"),
-        ]);
+        const response = await axios.get<{
+          success: boolean;
+          stats: {
+            jobs: number;
+            companies: number;
+            students: number;
+            applications: number;
+          };
+        }>("/api/admin/dashboard-stats");
 
-        const today = new Date();
-
-        // Only count jobs whose lastDateToApply is today or in the future
-        const activeJobsCount = jobsRes.data.success
-          ? jobsRes.data.jobs.filter(job => {
-              const deadline = new Date(job.lastDateToApply);
-              return deadline >= today;
-            }).length
-          : 0;
-
-        setStats({
-          jobs: activeJobsCount,
-          companies: companiesRes.data.success ? companiesRes.data.companies.length : 0,
-          students: studentsRes.data.success ? studentsRes.data.count : 0,
-          applications: appsRes.data.success ? appsRes.data.count : 0,
-        });
+        if (response.data.success) {
+          setStats(response.data.stats);
+        }
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching dashboard stats:", err);
       } finally {
         setLoading(false);
       }
     }
+
     fetchStats();
   }, []);
 
@@ -129,25 +120,35 @@ export default function AdminDashboard() {
 
       {/* System Overview */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">System Overview</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          System Overview
+        </h2>
         {loading ? (
           <p className="text-gray-600">Loading statistics…</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{stats.jobs}</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {stats.jobs}
+              </div>
               <div className="text-sm text-gray-600">Active Jobs</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{stats.companies}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {stats.companies}
+              </div>
               <div className="text-sm text-gray-600">Companies</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{stats.students}</div>
+              <div className="text-2xl font-bold text-purple-600">
+                {stats.students}
+              </div>
               <div className="text-sm text-gray-600">Students</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">{stats.applications}</div>
+              <div className="text-2xl font-bold text-orange-600">
+                {stats.applications}
+              </div>
               <div className="text-sm text-gray-600">Applications</div>
             </div>
           </div>

@@ -40,14 +40,18 @@ export default function AdminCompaniesManager() {
   };
 
   const handleDeleteCompany = async (companyId: string) => {
-    if (!confirm("Are you sure you want to delete this company? This action cannot be undone.")) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this company? This action cannot be undone."
+      )
+    ) {
       return;
     }
 
     try {
       const { data } = await axios.delete(`/api/companies/${companyId}`);
       if (data.success) {
-        setCompanies(companies.filter(company => company._id !== companyId));
+        setCompanies(companies.filter((company) => company._id !== companyId));
       } else {
         setError(data.message || "Failed to delete company");
       }
@@ -71,9 +75,11 @@ export default function AdminCompaniesManager() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Manage Companies</h1>
-          <p className="text-gray-600 mt-1">Add, edit, and manage company profiles</p>
+          <p className="text-gray-600 mt-1">
+            Add, edit, and manage company profiles
+          </p>
         </div>
-        
+
         <Link
           href="/admin/companies/new"
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2 transition-colors"
@@ -95,9 +101,12 @@ export default function AdminCompaniesManager() {
         {companies.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No companies found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No companies found
+            </h3>
             <p className="text-gray-600 mb-4">
-              No companies have been added yet. Start by adding your first company.
+              No companies have been added yet. Start by adding your first
+              company.
             </p>
             <Link
               href="/admin/companies/new"
@@ -108,25 +117,30 @@ export default function AdminCompaniesManager() {
             </Link>
           </div>
         ) : (
-          companies.map(company => (
-            <div key={company._id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+          companies.map((company) => (
+            <div
+              key={company._id}
+              className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+            >
               {/* Company Header */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
                   {company.logoUrl ? (
-                    <img 
-                      src={company.logoUrl} 
-                      alt={company.name} 
-                      className="h-12 w-12 object-contain rounded-lg" 
+                    <img
+                      src={company.logoUrl}
+                      alt={company.name}
+                      className="h-12 w-12 object-contain rounded-lg"
                     />
                   ) : (
                     <Building2 className="h-12 w-12 text-gray-400" />
                   )}
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{company.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {company.name}
+                    </h3>
                   </div>
                 </div>
-                
+
                 {/* Action Buttons */}
                 <div className="flex items-center space-x-2">
                   <Link
@@ -159,17 +173,43 @@ export default function AdminCompaniesManager() {
                     <span>{company.location}</span>
                   </div>
                 )}
-                
+
                 {company.website && (
                   <div className="flex items-center text-sm text-gray-500">
                     <Globe className="h-4 w-4 mr-2" />
-                    <a 
-                      href={company.website} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
+                    <a
+                      href={company.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-blue-600 hover:underline"
                     >
-                      {new URL(company.website).hostname}
+                      {(() => {
+                        try {
+                          // Check if website exists and is not empty
+                          if (
+                            !company.website ||
+                            company.website.trim() === ""
+                          ) {
+                            return company.website || "No website";
+                          }
+
+                          // Add protocol if missing
+                          let url = company.website.trim();
+                          if (
+                            !url.startsWith("http://") &&
+                            !url.startsWith("https://")
+                          ) {
+                            url = "https://" + url;
+                          }
+
+                          // Create URL and extract hostname
+                          const urlObj = new URL(url);
+                          return urlObj.hostname;
+                        } catch (error) {
+                          // If URL is still invalid, return the original value
+                          return company.website;
+                        }
+                      })()}
                     </a>
                   </div>
                 )}

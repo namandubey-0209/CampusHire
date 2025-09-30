@@ -20,8 +20,12 @@ export async function GET() {
 
     console.log("Fetching notifications for user:", user._id);
 
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+
     const notifications = await Notification.find({
       recipientId: user._id,
+      createdAt: { $gte: oneMonthAgo }, // Only notifications created >= 30 days ago
     }).sort({ createdAt: -1 });
 
     return Response.json(
